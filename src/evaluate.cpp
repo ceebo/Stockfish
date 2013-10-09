@@ -717,9 +717,6 @@ Value do_evaluate(const Position& pos, Value& margin) {
                 Square qsq = pop_lsb(&b);
                 // Check for mate (not exact, but won't report mate if none exists)
                 bool mateThreat = !(pos.attacks_from<KING>(ksq) & ~(unsafeSquares | pos.attacks_from<KING>(qsq)));
-                if (Them == pos.side_to_move() && mateThreat)
-                    return make_score(-VALUE_KNOWN_WIN, -VALUE_KNOWN_WIN);
-
                 attackUnits +=  QueenContactCheck
                               * (Them == pos.side_to_move() ? 2 : 1)
                               * (mateThreat ? 6 : 1);
