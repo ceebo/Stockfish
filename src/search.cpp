@@ -876,6 +876,22 @@ moves_loop: // When in check and at SpNode search starts from here
               && moveCount >= FutilityMoveCounts[improving][depth]
               && (!threatMove || !refutes(pos, move, threatMove)))
           {
+	      if(     pos.king_square(BLACK) == from_sq(move)
+		 &&   to_sq(move) == SQ_H8
+		 &&  !pos.non_pawn_material(BLACK)
+	         &&   pos.non_pawn_material(WHITE) == BishopValueMg
+	         &&  (pos.pieces(WHITE, PAWN) & FileHBB)
+		 && !(pos.pieces(WHITE, PAWN) & ~FileHBB)) {
+
+		  Log log("wrong_bishop_hack.txt");
+		  log << pos.fen()
+		      << " depth " << depth
+		      << " improving " << improving
+		      << " moveCount " << moveCount
+		      << " fmc " << FutilityMoveCounts[improving][depth]
+		      << std::endl;
+	      }
+
               if (SpNode)
                   splitPoint->mutex.lock();
 
