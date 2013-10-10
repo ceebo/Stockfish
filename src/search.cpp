@@ -1252,7 +1252,7 @@ moves_loop: // When in check and at SpNode search starts from here
           && !givesCheck
           &&  move != ttMove
           &&  type_of(move) != PROMOTION
-          &&  futilityBase > -VALUE_KNOWN_WIN
+	  &&  pos.non_pawn_material(pos.side_to_move())
           && !pos.passed_pawn_push(move))
       {
           futilityValue =  futilityBase
