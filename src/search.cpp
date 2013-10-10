@@ -909,6 +909,10 @@ moves_loop: // When in check and at SpNode search starts from here
               if (SpNode)
                   splitPoint->mutex.lock();
 
+	      if(pos.fen() == "8/6kP/8/8/5K2/8/8/1B6 b - - 2 8") {
+		Log log("wrong_bishop_hack.txt");
+		log << "Skip futility pruning" << std::endl;
+	      } else
               continue;
           }
 
