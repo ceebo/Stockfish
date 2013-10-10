@@ -788,6 +788,8 @@ moves_loop: // When in check and at SpNode search starts from here
                            && (tte->bound() & BOUND_LOWER)
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
 
+    bool pushed_a_pawn = false;
+
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move<SpNode>()) != MOVE_NONE)
@@ -881,7 +883,18 @@ moves_loop: // When in check and at SpNode search starts from here
 		 &&  !pos.non_pawn_material(BLACK)
 	         &&   pos.non_pawn_material(WHITE) == BishopValueMg
 	         &&  (pos.pieces(WHITE, PAWN) & FileHBB)
-		 && !(pos.pieces(WHITE, PAWN) & ~FileHBB)) {
+		 && !(pos.pieces(WHITE, PAWN) & ~FileHBB)
+		 && !pushed_a_pawn) {
+
+		// Do not report positions where the pawn is undefended
+		Square bksq = pos.king_square(BLACK);
+		Square wksq = pos.king_square(WHITE);
+		Square wbsq = pos.list<BISHOP>(WHITE)[0];
+		Bitboard pawns = pos.pieces(WHITE, PAWN);
+		
+		if(  !(pawns & pos.attacks_from<KING>(bksq))
+		   || (pawns & pos.attacks_from<KING>(wksq))
+		   || (pawns & pos.attacks_from<BISHOP>(wbsq))) { 
 
 		  Log log("wrong_bishop_hack.txt");
 		  log << pos.fen()
@@ -890,6 +903,7 @@ moves_loop: // When in check and at SpNode search starts from here
 		      << " moveCount " << moveCount
 		      << " fmc " << FutilityMoveCounts[improving][depth]
 		      << std::endl;
+		}
 	      }
 
               if (SpNode)
@@ -941,6 +955,9 @@ moves_loop: // When in check and at SpNode search starts from here
           --moveCount;
           continue;
       }
+
+      if(pos.piece_on(from_sq(move)) == B_PAWN)
+	pushed_a_pawn = true;
 
       pvMove = PvNode && moveCount == 1;
       ss->currentMove = move;
