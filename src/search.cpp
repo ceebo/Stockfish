@@ -52,6 +52,8 @@ using namespace Search;
 
 namespace {
 
+  Key debug_key;
+
   // Set to true to force running with one thread. Used for debugging
   const bool FakeSplit = false;
 
@@ -158,6 +160,9 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(3 + 0.3 * pow(double(d       ), 1.8)) * 3/4 + (2 < d && d < 5);
       FutilityMoveCounts[1][d] = int(3 + 0.3 * pow(double(d + 0.98), 1.8));
   }
+
+  Position pos("8/6kP/8/8/5K2/8/8/1B6 b - -", false, 0);
+  debug_key = pos.key();
 }
 
 
@@ -511,6 +516,13 @@ namespace {
     bool inCheck, givesCheck, pvMove, singularExtensionNode, improving;
     bool captureOrPromotion, dangerous, doFullDepthSearch;
     int moveCount, quietCount;
+
+    if(pos.key() == debug_key) {
+      Log log("wrong_bishop_hack.txt");
+      log << "Hit position with depth " << depth
+	  << " fen " << pos.fen()
+	  << std::endl;
+    }
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -909,10 +921,12 @@ moves_loop: // When in check and at SpNode search starts from here
               if (SpNode)
                   splitPoint->mutex.lock();
 
+	      /*
 	      if(pos.fen() == "8/6kP/8/8/5K2/8/8/1B6 b - - 2 8") {
 		Log log("wrong_bishop_hack.txt");
 		log << "Skip futility pruning" << std::endl;
 	      } else
+	      */
               continue;
           }
 
