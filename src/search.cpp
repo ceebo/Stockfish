@@ -1237,7 +1237,10 @@ moves_loop: // When in check and at SpNode search starts from here
           &&  move != ttMove
           &&  type_of(move) != PROMOTION
           &&  futilityBase > -VALUE_KNOWN_WIN
-          && !pos.passed_pawn_push(move))
+          && !pos.passed_pawn_push(move)
+	  && !(move == make_move(SQ_G7, SQ_H8)
+	       && (pos.pieces(KNIGHT) & SQ_H8)
+	       && (pos.pieces(KING) & SQ_G7)))
       {
           futilityValue =  futilityBase
                          + PieceValue[EG][pos.piece_on(to_sq(move))]
