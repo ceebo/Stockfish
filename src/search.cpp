@@ -874,6 +874,7 @@ moves_loop: // When in check and at SpNode search starts from here
           // Move count based pruning
           if (   depth < 16 * ONE_PLY
               && moveCount >= FutilityMoveCounts[improving][depth]
+              && !pos.bare_king_to_corner(move)
               && (!threatMove || !refutes(pos, move, threatMove)))
           {
               if (SpNode)
@@ -1238,9 +1239,7 @@ moves_loop: // When in check and at SpNode search starts from here
           &&  type_of(move) != PROMOTION
           &&  futilityBase > -VALUE_KNOWN_WIN
           && !pos.passed_pawn_push(move)
-	  && !(move == make_move(SQ_G7, SQ_H8)
-	       && (pos.pieces(KNIGHT) & SQ_H8)
-	       && (pos.pieces(KING) & SQ_G7)))
+          && !pos.bare_king_to_corner(move))
       {
           futilityValue =  futilityBase
                          + PieceValue[EG][pos.piece_on(to_sq(move))]

@@ -127,6 +127,7 @@ public:
   bool passed_pawn_push(Move m) const;
   Piece moved_piece(Move m) const;
   PieceType captured_piece_type() const;
+  bool bare_king_to_corner(Move m) const;
 
   // Piece specific
   bool pawn_passed(Color c, Square s) const;
@@ -393,6 +394,11 @@ inline bool Position::capture(Move m) const {
 
 inline PieceType Position::captured_piece_type() const {
   return st->capturedType;
+}
+
+inline bool Position::bare_king_to_corner(Move m) const {
+  Color stm = side_to_move();
+  return !non_pawn_material(stm) && (BackRankCorners[stm] & to_sq(m));
 }
 
 inline Thread* Position::this_thread() const {

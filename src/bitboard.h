@@ -83,6 +83,8 @@ extern Bitboard PseudoAttacks[PIECE_TYPE_NB][SQUARE_NB];
 extern int SquareDistance[SQUARE_NB][SQUARE_NB];
 
 const Bitboard DarkSquares = 0xAA55AA55AA55AA55ULL;
+const Bitboard BackRankCorners[COLOR_NB] = { (FileABB | FileHBB) & Rank1BB,
+                                             (FileABB | FileHBB) & Rank8BB };
 
 /// Overloads of bitwise operators between a Bitboard and a Square for testing
 /// whether a given bit is set in a bitboard, and for setting and clearing bits.
