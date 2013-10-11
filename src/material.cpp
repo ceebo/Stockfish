@@ -221,22 +221,20 @@ Entry* probe(const Position& pos, Table& entries, Endgames& endgames) {
 
   if (npm_w + npm_b == VALUE_ZERO)
   {
-      if (!pos.count<PAWN>(BLACK))
+      if (pos.count<PAWN>(WHITE) == 1 && pos.count<PAWN>(BLACK) == 1)
       {
-          assert(pos.count<PAWN>(WHITE) >= 2);
-          e->scalingFunction[WHITE] = &ScaleKPsK[WHITE];
-      }
-      else if (!pos.count<PAWN>(WHITE))
-      {
-          assert(pos.count<PAWN>(BLACK) >= 2);
-          e->scalingFunction[BLACK] = &ScaleKPsK[BLACK];
-      }
-      else if (pos.count<PAWN>(WHITE) == 1 && pos.count<PAWN>(BLACK) == 1)
-      {
-          // This is a special case because we set scaling functions
-          // for both colors instead of only one.
           e->scalingFunction[WHITE] = &ScaleKPKP[WHITE];
           e->scalingFunction[BLACK] = &ScaleKPKP[BLACK];
+      }
+      // Scaling functions to detect when only rook pawns remain.
+      // Using these with more than 4 pawns would certainly be overkill.
+      else if (pos.count<PAWN>(WHITE) + pos.count<PAWN>(BLACK) <= 4)
+      {
+          if (pos.count<PAWN>(WHITE))
+              e->scalingFunction[WHITE] = &ScaleKPsK[WHITE];
+
+          if (pos.count<PAWN>(BLACK))
+              e->scalingFunction[BLACK] = &ScaleKPsK[BLACK];
       }
   }
 

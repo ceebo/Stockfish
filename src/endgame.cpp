@@ -656,8 +656,14 @@ ScaleFactor Endgame<KPsK>::operator()(const Position& pos) const {
 
   assert(pos.non_pawn_material(strongerSide) == VALUE_ZERO);
   assert(pos.non_pawn_material(weakerSide)   == VALUE_ZERO);
-  assert(pos.count<PAWN>(strongerSide) >= 2);
-  assert(pos.count<PAWN>(weakerSide  ) == 0);
+  assert(pos.count<PAWN>(strongerSide) >= 1);
+  // No assertions about the number of pawns of the weaker side.
+  // Only in exceptionally contrived positions is it a disadvantage
+  // for the weak side to have pawns when the strong side has only
+  // rook pawns and the king is well placed.
+  // e.g. 7k/7P/6p1/6Kp/7P/8/8/8 w - - 0 1
+  // and  7k/7P/6p1/6pK/8/7P/8/8 w - - 0 1
+  // are incorrectly scored as draws by this function.
 
   Square ksq = pos.king_square(weakerSide);
   Bitboard pawns = pos.pieces(strongerSide, PAWN);
