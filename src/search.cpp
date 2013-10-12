@@ -874,7 +874,8 @@ moves_loop: // When in check and at SpNode search starts from here
           // Move count based pruning
           if (   depth < 16 * ONE_PLY
               && moveCount >= FutilityMoveCounts[improving][depth]
-              && (!threatMove || !refutes(pos, move, threatMove)))
+              && (!threatMove || !refutes(pos, move, threatMove))
+              && !pos.bare_king_to_corner(move))
           {
               if (SpNode)
                   splitPoint->mutex.lock();
@@ -1237,7 +1238,8 @@ moves_loop: // When in check and at SpNode search starts from here
           &&  move != ttMove
           &&  type_of(move) != PROMOTION
           &&  futilityBase > -VALUE_KNOWN_WIN
-          && !pos.passed_pawn_push(move))
+          && !pos.passed_pawn_push(move)
+          && !pos.bare_king_to_corner(move))
       {
           futilityValue =  futilityBase
                          + PieceValue[EG][pos.piece_on(to_sq(move))]
