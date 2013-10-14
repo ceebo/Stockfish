@@ -163,6 +163,7 @@ public:
   int64_t nodes_searched() const;
   void set_nodes_searched(int64_t n);
   bool is_draw() const;
+  bool verify_material(Color c, Value npm, int num_pawns) const;
 
   // Position consistency check, for debugging
   bool pos_is_ok(int* failedStep = NULL) const;
@@ -397,6 +398,10 @@ inline PieceType Position::captured_piece_type() const {
 
 inline Thread* Position::this_thread() const {
   return thisThread;
+}
+
+inline bool Position::verify_material(Color c, Value npm, int num_pawns) const {
+  return st->npMaterial[c] == npm && pieceCount[c][PAWN] == num_pawns;
 }
 
 inline void Position::put_piece(Square s, Color c, PieceType pt) {
