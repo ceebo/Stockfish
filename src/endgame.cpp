@@ -421,21 +421,35 @@ ScaleFactor Endgame<KBPsK>::operator()(const Position& pos) const {
   {
       Square bishopSq = pos.list<BISHOP>(strongerSide)[0];
       Square queeningSq = relative_square(strongerSide, pawnFile | RANK_8);
-      Square kingSq = pos.king_square(weakerSide);
+      Square weakerKingSq = pos.king_square(weakerSide);
 
-      if (   opposite_colors(queeningSq, bishopSq)
-          && abs(file_of(kingSq) - pawnFile) <= 1)
+      if (opposite_colors(queeningSq, bishopSq))
       {
-          // The bishop has the wrong color, and the defending king is on the
-          // file of the pawn(s) or the adjacent file. Find the rank of the
-          // frontmost pawn.
+          int weakerKingDist = square_distance(queeningSq, weakerKingSq);
+
+          // It's a draw if we are within one square of the corner
+          if (weakerKingDist <= 1)
+              return SCALE_FACTOR_DRAW;
+
+          Square strongerKingSq = pos.king_square(strongerSide);
           Square pawnSq = frontmost_sq(strongerSide, pawns);
 
-          // If the defending king has distance 1 to the promotion square or
-          // is placed somewhere in front of the pawn, it's a draw.
-          if (   square_distance(kingSq, queeningSq) <= 1
-              || relative_rank(weakerSide, kingSq) <= relative_rank(weakerSide, pawnSq))
-              return SCALE_FACTOR_DRAW;
+          int strongerKingDist = square_distance(queeningSq, strongerKingSq);
+          int pawnDist = square_distance(queeningSq, pawnSq);
+
+          // Account for double pawn push on first move
+          pawnDist = std::min(pawnDist, 5);
+
+          // "Rewind" one move if necessary so that weakerSide is to play
+          if (pos.side_to_move() == strongerSide)
+              weakerKingDist++;
+
+          // If the weaker king is ahead of the stronger king and all
+          // of the pawns then it's a draw unless we are unlucky
+          // enough to be blocked by some of our own material.
+          // Therefore we only give a very drawish ScaleFactor here.
+          if (weakerKingDist < strongerKingDist && weakerKingDist < pawnDist)
+              return ScaleFactor(4);
       }
   }
 
