@@ -407,19 +407,8 @@ ScaleFactor Endgame<KBPsK>::operator()(const Position& pos) const {
       Square kingSq = pos.king_square(weakerSide);
 
       if (   opposite_colors(queeningSq, bishopSq)
-          && abs(file_of(kingSq) - pawnFile) <= 1)
-      {
-          // The bishop has the wrong color, and the defending king is on the
-          // file of the pawn(s) or the adjacent file. Find the rank of the
-          // frontmost pawn.
-          Square pawnSq = frontmost_sq(strongerSide, pawns);
-
-          // If the defending king has distance 1 to the promotion square or
-          // is placed somewhere in front of the pawn, it's a draw.
-          if (   square_distance(kingSq, queeningSq) <= 1
-              || relative_rank(weakerSide, kingSq) <= relative_rank(weakerSide, pawnSq))
-              return SCALE_FACTOR_DRAW;
-      }
+          && square_distance(queeningSq, kingSq) <= 1)
+          return SCALE_FACTOR_DRAW;
   }
 
   // All pawns on same B or G file? Then potential draw
