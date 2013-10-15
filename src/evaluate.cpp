@@ -727,7 +727,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
 
                 attackUnits +=  QueenContactCheck
                               * (Them == pos.side_to_move() ? 2 : 1)
-                              * (mateThreat ? 6 : 1);
+                              * (mateThreat ? 3 : 1);
             }
         }
 
