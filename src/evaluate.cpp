@@ -717,9 +717,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
                 Square qsq = pop_lsb(&b);
                 // Check for mate (not exact, but won't report mate if none exists)
                 bool mateThreat = !(pos.attacks_from<KING>(ksq) & ~(unsafeSquares | pos.attacks_from<KING>(qsq)));
-                if (   Them == pos.side_to_move()
-                    && mateThreat
-                    && !(pos.pinned_pieces(Them) & pos.pieces(Them, QUEEN))) {
+                if (Them == pos.side_to_move() && mateThreat && !(pos.pinned_pieces(Them) & pos.pieces(Them, QUEEN))) {
                     score -= make_score(VALUE_KNOWN_WIN, VALUE_KNOWN_WIN);
                     break;
                 }
