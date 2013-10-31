@@ -51,11 +51,8 @@ namespace {
   { S(20, 28), S(29, 31), S(33, 31), S(33, 31),
     S(33, 31), S(33, 31), S(29, 31), S(20, 28) }};
 
-  // Pawn chain membership bonus by file
-  const Score ChainMember[FILE_NB] = {
-    S(11,-1), S(13,-1), S(13,-1), S(14,-1),
-    S(14,-1), S(13,-1), S(13,-1), S(11,-1)
-  };
+  // Pawn chain membership bonus by file and rank (initialized by formula)
+  Score ChainMember[FILE_NB][RANK_NB];
 
   // Candidate passed pawn bonus by rank
   const Score CandidatePassed[RANK_NB] = {
@@ -176,7 +173,7 @@ namespace {
             value -= Backward[opposed][f];
 
         if (chain)
-            value += ChainMember[f];
+            value += ChainMember[f][relative_rank(Us, s)];
 
         if (candidate)
         {
@@ -193,6 +190,22 @@ namespace {
 } // namespace
 
 namespace Pawns {
+
+/// init() initializes some tables by formula instead of hard-code their values
+
+void init() {
+
+  const int chainByFile[8] = { 1, 3, 3, 4, 4, 3, 3, 1 };
+  int bonus;
+
+  for (Rank r = RANK_1; r < RANK_8; ++r)
+      for (File f = FILE_A; f <= FILE_H; ++f)
+      {
+          bonus = r * (r-1) * (r-2) + chainByFile[f] * (r/2 + 1);
+          ChainMember[f][r] = make_score(bonus, bonus);
+      }
+}
+
 
 /// probe() takes a position object as input, computes a Entry object, and returns
 /// a pointer to it. The result is also stored in a hash table, so we don't have
@@ -227,13 +240,13 @@ Value Entry::shelter_storm(const Position& pos, Square ksq) {
   Rank rkUs, rkThem;
   File kf = std::max(FILE_B, std::min(FILE_G, file_of(ksq)));
 
-  for (int f = kf - 1; f <= kf + 1; ++f)
+  for (File f = kf - File(1); f <= kf + File(1); ++f)
   {
-      b = ourPawns & FileBB[f];
+      b = ourPawns & file_bb(f);
       rkUs = b ? relative_rank(Us, backmost_sq(Us, b)) : RANK_1;
       safety -= ShelterWeakness[rkUs];
 
-      b  = theirPawns & FileBB[f];
+      b  = theirPawns & file_bb(f);
       rkThem = b ? relative_rank(Us, frontmost_sq(Them, b)) : RANK_1;
       safety -= StormDanger[rkUs == RANK_1 ? 0 : rkThem == rkUs + 1 ? 2 : 1][rkThem];
   }
