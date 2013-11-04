@@ -681,7 +681,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
                 do {
                     Square qsq = pop_lsb(&b);
                     // Check for mate (not exact, but won't report mate if none exists)
-                    Bitboard q_attacks = queen_contact_attacks(qsq, pos.pieces(), pos.pieces(KING));
+                    Bitboard q_attacks = pos.queen_contact_attacks_from(qsq);
                     bool mateThreat = !(escapes & ~q_attacks);
                     if (Them == pos.side_to_move() && mateThreat && !(pos.pinned_pieces(Them) & pos.pieces(Them, QUEEN))) {
                         score -= make_score(VALUE_KNOWN_WIN, VALUE_KNOWN_WIN);

@@ -254,10 +254,6 @@ inline Bitboard attacks_bb(Square s, Bitboard occ) {
   return (Pt == ROOK ? RAttacks : BAttacks)[s][magic_index<Pt>(s, occ)];
 }
 
-inline Bitboard queen_contact_attacks(Square s, Bitboard occ, Bitboard kings) {
-  return PseudoAttacks[BISHOP][s] | attacks_bb<ROOK>(s, occ ^ kings);
-}
-
 
 /// lsb()/msb() finds the least/most significant bit in a nonzero bitboard.
 /// pop_lsb() finds and clears the least significant bit in a nonzero bitboard.

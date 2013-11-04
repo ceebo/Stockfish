@@ -117,6 +117,7 @@ public:
   static Bitboard attacks_from(Piece p, Square s, Bitboard occ);
   template<PieceType> Bitboard attacks_from(Square s) const;
   template<PieceType> Bitboard attacks_from(Square s, Color c) const;
+  Bitboard queen_contact_attacks_from(Square s) const;
 
   // Properties of moves
   bool legal(Move m, Bitboard pinned) const;
@@ -301,6 +302,10 @@ inline Bitboard Position::attacks_from(Square s) const {
 template<>
 inline Bitboard Position::attacks_from<PAWN>(Square s, Color c) const {
   return StepAttacksBB[make_piece(c, PAWN)][s];
+}
+
+inline Bitboard Position::queen_contact_attacks_from(Square s) const {
+  return PseudoAttacks[BISHOP][s] | attacks_bb<ROOK>(s, pieces() ^ pieces(KING));
 }
 
 inline Bitboard Position::attacks_from(Piece p, Square s) const {
