@@ -21,6 +21,7 @@
 #include <iomanip>
 #include <sstream>
 #include <algorithm>
+#include <iostream>
 
 #include "bitcount.h"
 #include "evaluate.h"
@@ -326,6 +327,9 @@ Value do_evaluate(const Position& pos, Value& margin) {
   // Probe the material hash table
   ei.mi = Material::probe(pos, th->materialTable, th->endgames);
   score += ei.mi->material_value();
+
+  if(Trace)
+      std::cout << "material_value: " << ei.mi->material_value() << std::endl;
 
   // If we have a specialized evaluation function for the current material
   // configuration, call it and return.
