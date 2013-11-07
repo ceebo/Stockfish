@@ -34,9 +34,6 @@ namespace {
   // Scale factors used when one side has no more pawns
   const int NoPawnsSF[4] = { 6, 12, 32 };
 
-  // Polynomial material balance parameters
-  const Value RedundantQueen = Value(320);
-  const Value RedundantRook  = Value(554);
 
   //                                  pair  pawn knight bishop rook queen
   const int LinearCoefficients[6] = { 1852, -162, -1122, -183,  105,  26 };
@@ -102,6 +99,8 @@ namespace {
   int imbalance(const int pieceCount[][PIECE_TYPE_NB]) {
 
     const Color Them = (Us == WHITE ? BLACK : WHITE);
+    const Value RedundantQueen = Value(320);
+    const Value RedundantRook  = Value((pieceCount[Us][PAWN] + pieceCount[Them][PAWN]) * 40);
 
     int pt1, pt2, pc, v;
     int value = 0;
