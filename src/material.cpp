@@ -100,7 +100,7 @@ namespace {
 
     const Color Them = (Us == WHITE ? BLACK : WHITE);
     const Value RedundantQueen = Value(320);
-    const Value RedundantRook  = Value((pieceCount[Us][PAWN] + pieceCount[Them][PAWN]) * 40);
+    const Value RedundantRook  = Value(0);
 
     int pt1, pt2, pc, v;
     int value = 0;
@@ -271,7 +271,14 @@ Entry* probe(const Position& pos, Table& entries, Endgames& endgames) {
   { pos.count<BISHOP>(BLACK) > 1, pos.count<PAWN>(BLACK), pos.count<KNIGHT>(BLACK),
     pos.count<BISHOP>(BLACK)    , pos.count<ROOK>(BLACK), pos.count<QUEEN >(BLACK) } };
 
-  e->value = (int16_t)((imbalance<WHITE>(pieceCount) - imbalance<BLACK>(pieceCount)) / 16);
+  e->value = (int16_t)((imbalance<WHITE>(pieceCount) - imbalance<BLACK>(pieceCount)));
+
+  int totalPawns = pos.count<PAWN>(WHITE) + pos.count<PAWN>(BLACK);
+  if(pos.count<ROOK>(WHITE) == 2) e->value -= 40 * totalPawns;
+  if(pos.count<ROOK>(BLACK) == 2) e->value += 40 * totalPawns;
+
+  e->value /= 16;
+
   return e;
 }
 
