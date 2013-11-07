@@ -287,24 +287,4 @@ Phase game_phase(const Position& pos) {
         : Phase(((npm - EndgameLimit) * 128) / (MidgameLimit - EndgameLimit));
 }
 
-void check_imbalance() {
-
-  Log log("imbalance.txt");
-
-  int pcs[COLOR_NB][PIECE_TYPE_NB];
-  int *w = pcs[0], *b = pcs[1];
-
-#define go(piece, n) for (piece = 0; piece <= n; piece++)
-
-  // pawns      knights     bishops     rooks       queens
-  go(w[1], 8) go(w[2], 2) go(w[3], 2) go(w[4], 2) go(w[5], 1)     // white
-  go(b[1], 8) go(b[2], 2) go(b[3], 2) go(b[4], 2) go(b[5], 1) {   // black
-      // bishop pair
-      w[0] = (w[3] > 1);
-      b[0] = (b[3] > 1);
-      log << imbalance<WHITE>(pcs) - imbalance<BLACK>(pcs) << std::endl;
-  }
-
-}
-
 } // namespace Material

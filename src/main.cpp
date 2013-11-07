@@ -30,8 +30,6 @@
 
 int main(int argc, char* argv[]) {
 
-  Material::check_imbalance();
-
   std::cout << engine_info() << std::endl;
 
   UCI::init(Options);
