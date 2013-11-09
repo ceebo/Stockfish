@@ -503,7 +503,7 @@ Value do_evaluate(const Position& pos, Value& margin) {
                             : pos.attacks_from<Piece>(s);
 
         if (ei.pinnedPieces[Us] & s)
-            b &= PseudoAttacks[QUEEN][pos.king_square(Us)];
+            b &= LineBB[pos.king_square(Us)][s];
 
         ei.attackedBy[Us][Piece] |= b;
 
