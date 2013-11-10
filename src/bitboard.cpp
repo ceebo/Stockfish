@@ -222,13 +222,10 @@ void Bitboards::init() {
       for (Square s2 = SQ_A1; s2 <= SQ_H8; ++s2)
           if (PseudoAttacks[QUEEN][s1] & s2)
           {
-              Square delta = (s2 - s1) / square_distance(s1, s2);
-
-              for (Square s = s1 + delta; s != s2; s += delta)
-                  BetweenBB[s1][s2] |= s;
-
               PieceType pc = (PseudoAttacks[BISHOP][s1] & s2) ? BISHOP : ROOK;
               LineBB[s1][s2] = (PseudoAttacks[pc][s1] & PseudoAttacks[pc][s2]) | s1 | s2;
+              Bitboard b = SquareBB[s1] | SquareBB[s2];
+              BetweenBB[s1][s2] = LineBB[s1][s2] & (b - 3 * (b & -b));
           }
 }
 
