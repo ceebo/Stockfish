@@ -58,6 +58,13 @@ namespace {
     // contains all squares attacked by the given color.
     Bitboard attackedBy[COLOR_NB][PIECE_TYPE_NB];
 
+    // movesBy[color][piece type] is a bitboard representing all squares
+    // that a given color and piece type can move to. It differs from
+    // attackedBy[][] because it takes pins into account and knows that
+    // we cannot move to squares occupied by our own pieces.
+    // NOTE: movesBy[color] is not defined for PAWN, KING or ALL_PIECES!!
+    Bitboard movesBy[COLOR_NB][PIECE_TYPE_NB];
+
     // kingRing[color] is the zone around the king which is considered
     // by the king safety evaluation. This consists of the squares directly
     // adjacent to the king, and the three (or two, for a king on an edge file)
@@ -482,7 +489,7 @@ Value do_evaluate(const Position& pos) {
     const Color Them = (Us == WHITE ? BLACK : WHITE);
     const Square* pl = pos.list<Piece>(Us);
 
-    ei.attackedBy[Us][Piece] = 0;
+    ei.attackedBy[Us][Piece] = ei.movesBy[Us][Piece] = 0;
 
     while ((s = *pl++) != SQ_NONE)
     {
@@ -490,9 +497,6 @@ Value do_evaluate(const Position& pos) {
         b = Piece == BISHOP ? attacks_bb<BISHOP>(s, pos.pieces() ^ pos.pieces(Us, QUEEN))
           : Piece ==   ROOK ? attacks_bb<  ROOK>(s, pos.pieces() ^ pos.pieces(Us, ROOK, QUEEN))
                             : pos.attacks_from<Piece>(s);
-
-        if (ei.pinnedPieces[Us] & s)
-            b &= LineBB[pos.king_square(Us)][s];
 
         ei.attackedBy[Us][Piece] |= b;
 
@@ -504,6 +508,11 @@ Value do_evaluate(const Position& pos) {
             if (bb)
                 ei.kingAdjacentZoneAttacksCount[Us] += popcount<Max15>(bb);
         }
+
+        if (ei.pinnedPieces[Us] & s)
+            b &= LineBB[pos.king_square(Us)][s];
+
+        ei.movesBy[Us][Piece] |= b;
 
         int mob = Piece != QUEEN ? popcount<Max15>(b & mobilityArea)
                                  : popcount<Full >(b & mobilityArea);
@@ -592,6 +601,8 @@ Value do_evaluate(const Position& pos) {
         }
     }
 
+    ei.movesBy[Us][Piece] &= ~pos.pieces(Us);
+
     if (Trace)
         Tracing::scores[Us][Piece] = score;
 
@@ -663,11 +674,11 @@ Value do_evaluate(const Position& pos) {
                      - mg_value(score) / 32;
 
         // Analyse enemy's safe queen contact checks. First find undefended
-        // squares around the king attacked by enemy queen...
-        b = undefended & ei.attackedBy[Them][QUEEN] & ~pos.pieces(Them);
+        // squares around the king available to enemy queen...
+        b = undefended & ei.movesBy[Them][QUEEN];
         if (b)
         {
-            // ...then remove squares not supported by another enemy piece
+            // ...then restrict to squares supported by another enemy piece
             b &= (  ei.attackedBy[Them][PAWN]   | ei.attackedBy[Them][KNIGHT]
                   | ei.attackedBy[Them][BISHOP] | ei.attackedBy[Them][ROOK]);
             if (b)
@@ -677,15 +688,15 @@ Value do_evaluate(const Position& pos) {
         }
 
         // Analyse enemy's safe rook contact checks. First find undefended
-        // squares around the king attacked by enemy rooks...
-        b = undefended & ei.attackedBy[Them][ROOK] & ~pos.pieces(Them);
+        // squares around the king available to enemy rooks...
+        b = undefended & ei.movesBy[Them][ROOK];
 
         // Consider only squares where the enemy rook gives check
         b &= PseudoAttacks[ROOK][ksq];
 
         if (b)
         {
-            // ...then remove squares not supported by another enemy piece
+            // ...then restrict to squares supported by another enemy piece
             b &= (  ei.attackedBy[Them][PAWN]   | ei.attackedBy[Them][KNIGHT]
                   | ei.attackedBy[Them][BISHOP] | ei.attackedBy[Them][QUEEN]);
             if (b)
@@ -695,28 +706,28 @@ Value do_evaluate(const Position& pos) {
         }
 
         // Analyse enemy's safe distance checks for sliders and knights
-        safe = ~(pos.pieces(Them) | ei.attackedBy[Us][ALL_PIECES]);
+        safe = ~ei.attackedBy[Us][ALL_PIECES];
 
         b1 = pos.attacks_from<ROOK>(ksq) & safe;
         b2 = pos.attacks_from<BISHOP>(ksq) & safe;
 
         // Enemy queen safe checks
-        b = (b1 | b2) & ei.attackedBy[Them][QUEEN];
+        b = (b1 | b2) & ei.movesBy[Them][QUEEN];
         if (b)
             attackUnits += QueenCheck * popcount<Max15>(b);
 
         // Enemy rooks safe checks
-        b = b1 & ei.attackedBy[Them][ROOK];
+        b = b1 & ei.movesBy[Them][ROOK];
         if (b)
             attackUnits += RookCheck * popcount<Max15>(b);
 
         // Enemy bishops safe checks
-        b = b2 & ei.attackedBy[Them][BISHOP];
+        b = b2 & ei.movesBy[Them][BISHOP];
         if (b)
             attackUnits += BishopCheck * popcount<Max15>(b);
 
         // Enemy knights safe checks
-        b = pos.attacks_from<KNIGHT>(ksq) & ei.attackedBy[Them][KNIGHT] & safe;
+        b = pos.attacks_from<KNIGHT>(ksq) & ei.movesBy[Them][KNIGHT] & safe;
         if (b)
             attackUnits += KnightCheck * popcount<Max15>(b);
 
