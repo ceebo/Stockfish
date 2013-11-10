@@ -538,14 +538,14 @@ Value do_evaluate(const Position& pos, Value& margin) {
 
         mobility[Us] += MobilityBonus[Piece][mob];
 
-        if (Piece != KNIGHT)
-            occ = pos.pieces();
+        if (Piece == QUEEN)
+            occ =  pos.pieces() ^ pos.pieces(Them, QUEEN) ^ pos.pieces(Them, BISHOP, ROOK);
 
-        if (Piece == QUEEN || Piece == BISHOP)
-            occ ^= pos.pieces(Them, BISHOP, QUEEN);
+        if (Piece == ROOK)
+            occ = pos.pieces() ^ pos.pieces(Them, ROOK, QUEEN);
 
-        if (Piece == QUEEN || Piece == ROOK)
-            occ ^= pos.pieces(Them, ROOK, QUEEN);
+        if (Piece == BISHOP)
+            occ = pos.pieces() ^ pos.pieces(Them, BISHOP, QUEEN);
 
         if (Piece == QUEEN || Piece == BISHOP)
             ei.xrayDefendedBy[Us] |= attacks_bb<BISHOP>(s, occ);
