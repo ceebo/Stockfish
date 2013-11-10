@@ -217,6 +217,9 @@ namespace {
   const int BishopCheck       = 2;
   const int KnightCheck       = 3;
 
+  // Bonus for mate in one threat
+  const Score QueenMateThreat = make_score(50, 50);
+
   // KingExposed[Square] contains penalties based on the position of the
   // defending king, indexed by king's square (from white's point of view).
   const int KingExposed[] = {
@@ -637,6 +640,28 @@ Value do_evaluate(const Position& pos) {
   }
 
 
+  // If we are allowed to pass freely through enemy queens, can we
+  // attack the "to" square with a sliding piece?
+  template <Color Us>
+  bool has_queen_xray(const Position& pos, Square to) {
+      
+    const Color Them = ~Us;
+    
+    Bitboard other_pieces = pos.pieces() ^ pos.pieces(Them, QUEEN);
+    Bitboard b;
+
+    b  = PseudoAttacks[ROOK  ][to] & pos.pieces(Us, ROOK,   QUEEN);
+    b |= PseudoAttacks[BISHOP][to] & pos.pieces(Us, BISHOP, QUEEN);
+    
+    while (b) {
+        Square from = pop_lsb(&b);
+        if (!(BetweenBB[to][from] & other_pieces))
+            return true;
+    }
+    
+    return false;
+  }
+
   // evaluate_king() assigns bonuses and penalties to a king of a given color
 
   template<Color Us, bool Trace>
@@ -644,7 +669,7 @@ Value do_evaluate(const Position& pos) {
 
     const Color Them = (Us == WHITE ? BLACK : WHITE);
 
-    Bitboard undefended, b, b1, b2, safe;
+    Bitboard undefended, attacked, b, b1, b2, safe;
     int attackUnits;
     const Square ksq = pos.king_square(Us);
 
@@ -679,12 +704,41 @@ Value do_evaluate(const Position& pos) {
         if (b)
         {
             // ...then restrict to squares supported by another enemy piece
-            b &= (  ei.attackedBy[Them][PAWN]   | ei.attackedBy[Them][KNIGHT]
-                  | ei.attackedBy[Them][BISHOP] | ei.attackedBy[Them][ROOK]);
+            attacked =  ei.attackedBy[Them][PAWN]   | ei.attackedBy[Them][KNIGHT]
+                      | ei.attackedBy[Them][BISHOP] | ei.attackedBy[Them][ROOK];
+            b &= attacked;
+
             if (b)
                 attackUnits +=  QueenContactCheck
                               * popcount<Max15>(b)
                               * (Them == pos.side_to_move() ? 2 : 1);
+            
+            // Calculate squares we need to cover to give mate.
+            Bitboard escapes = pos.attacks_from<KING>(ksq) & ~attacked;
+            
+            while (b) {
+                Square qsq = pop_lsb(&b);
+                Bitboard q_contact_attacks = pos.attacks_from<KING>(qsq);
+                if (!(escapes & ~q_contact_attacks))
+                {
+                    if (pos.side_to_move() == Us)
+                    {
+                        score -= QueenMateThreat;
+                        break;
+                    }
+
+                    // They are to move. Can we prevent mate in one
+                    // with an xray attack through their queen?
+                    if (!has_queen_xray<Us>(pos, qsq))
+                    {
+                        score -= make_score(VALUE_KNOWN_WIN, VALUE_KNOWN_WIN);
+                        break;
+                    } /*else {
+                        Log log("xray_escapes.txt");
+                        log << pos.fen() << std::endl;
+                    }*/
+                }
+            }
         }
 
         // Analyse enemy's safe rook contact checks. First find undefended
