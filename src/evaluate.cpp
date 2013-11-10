@@ -65,6 +65,12 @@ namespace {
     // NOTE: movesBy[color] is not defined for PAWN, KING or ALL_PIECES!!
     Bitboard movesBy[COLOR_NB][PIECE_TYPE_NB];
 
+    // xrayDefendedBy[color] is a bitboard that is guaranteed to contain
+    // the squares attacked by a given color's sliding pieces after the
+    // other side has moved a sliding piece. The current implementation is
+    // overly generous but fixing this would probably need even more code.
+    Bitboard xrayDefendedBy[COLOR_NB];
+
     // kingRing[color] is the zone around the king which is considered
     // by the king safety evaluation. This consists of the squares directly
     // adjacent to the king, and the three (or two, for a king on an edge file)
@@ -437,6 +443,8 @@ Value do_evaluate(const Position& pos) {
     Bitboard b = ei.attackedBy[Them][KING] = pos.attacks_from<KING>(pos.king_square(Them));
     ei.attackedBy[Us][PAWN] = ei.pi->pawn_attacks(Us);
 
+    ei.xrayDefendedBy[Us] = 0;
+
     // Init king safety tables only if we are going to use them
     if (pos.count<QUEEN>(Us) && pos.non_pawn_material(Us) > QueenValueMg + PawnValueMg)
     {
@@ -482,7 +490,7 @@ Value do_evaluate(const Position& pos) {
   template<PieceType Piece, Color Us, bool Trace>
   Score evaluate_pieces(const Position& pos, EvalInfo& ei, Score* mobility, Bitboard mobilityArea) {
 
-    Bitboard b;
+    Bitboard b, occ;
     Square s;
     Score score = SCORE_ZERO;
 
@@ -518,6 +526,21 @@ Value do_evaluate(const Position& pos) {
                                  : popcount<Full >(b & mobilityArea);
 
         mobility[Us] += MobilityBonus[Piece][mob];
+
+        if (Piece == QUEEN)
+            occ =  pos.pieces() ^ pos.pieces(Them, QUEEN) ^ pos.pieces(Them, BISHOP, ROOK);
+
+        if (Piece == ROOK)
+            occ = pos.pieces() ^ pos.pieces(Them, ROOK, QUEEN);
+
+        if (Piece == BISHOP)
+            occ = pos.pieces() ^ pos.pieces(Them, BISHOP, QUEEN);
+
+        if (Piece == QUEEN || Piece == BISHOP)
+            ei.xrayDefendedBy[Us] |= attacks_bb<BISHOP>(s, occ);
+
+        if (Piece == QUEEN || Piece == ROOK)
+            ei.xrayDefendedBy[Us] |= attacks_bb<ROOK>(s, occ);
 
         // Decrease score if we are attacked by an enemy pawn. Remaining part
         // of threat evaluation must be done later when we have full attack info.
@@ -644,7 +667,7 @@ Value do_evaluate(const Position& pos) {
 
     const Color Them = (Us == WHITE ? BLACK : WHITE);
 
-    Bitboard undefended, b, b1, b2, safe;
+    Bitboard defended, undefended, b, b1, b2;
     int attackUnits;
     const Square ksq = pos.king_square(Us);
 
@@ -655,13 +678,17 @@ Value do_evaluate(const Position& pos) {
     if (   ei.kingAttackersCount[Them] >= 2
         && ei.kingAdjacentZoneAttacksCount[Them])
     {
-        // Find the attacked squares around the king which has no defenders
-        // apart from the king itself
+        // Find squares that might be defended by our pieces after the
+        // opponent moves a sliding piece
+        defended = ei.attackedBy[Us][PAWN]
+                 | ei.attackedBy[Us][KNIGHT]
+                 | ei.xrayDefendedBy[Us];
+
+        // Find the attacked squares around the king that definitely
+        // will not have any defenders, apart from the king itself
         undefended =  ei.attackedBy[Them][ALL_PIECES]
                     & ei.attackedBy[Us][KING]
-                    & ~(  ei.attackedBy[Us][PAWN]   | ei.attackedBy[Us][KNIGHT]
-                        | ei.attackedBy[Us][BISHOP] | ei.attackedBy[Us][ROOK]
-                        | ei.attackedBy[Us][QUEEN]);
+                    & ~defended;
 
         // Initialize the 'attackUnits' variable, which is used later on as an
         // index to the KingDanger[] array. The initial value is based on the
@@ -706,10 +733,8 @@ Value do_evaluate(const Position& pos) {
         }
 
         // Analyse enemy's safe distance checks for sliders and knights
-        safe = ~ei.attackedBy[Us][ALL_PIECES];
-
-        b1 = pos.attacks_from<ROOK>(ksq) & safe;
-        b2 = pos.attacks_from<BISHOP>(ksq) & safe;
+        b1 = pos.attacks_from<ROOK>(ksq) & ~defended;
+        b2 = pos.attacks_from<BISHOP>(ksq) & ~defended;
 
         // Enemy queen safe checks
         b = (b1 | b2) & ei.movesBy[Them][QUEEN];
@@ -727,7 +752,7 @@ Value do_evaluate(const Position& pos) {
             attackUnits += BishopCheck * popcount<Max15>(b);
 
         // Enemy knights safe checks
-        b = pos.attacks_from<KNIGHT>(ksq) & ei.movesBy[Them][KNIGHT] & safe;
+        b = pos.attacks_from<KNIGHT>(ksq) & ei.movesBy[Them][KNIGHT] & ~defended;
         if (b)
             attackUnits += KnightCheck * popcount<Max15>(b);
 
