@@ -37,12 +37,12 @@ namespace {
   // Polynomial material balance parameters
 
   //                                  pair  pawn knight bishop rook queen
-  const int LinearCoefficients[6] = { 1852, -274, -1122, -183,  249, -52 };
+  const int LinearCoefficients[6] = { 1852, -402, -1122, -183,  249, -52 };
 
   const int QuadraticCoefficientsSameColor[][PIECE_TYPE_NB] = {
     // pair pawn knight bishop rook queen
     {   0                               }, // Bishop pair
-    {  39,   16                         }, // Pawn
+    {  39,   32                         }, // Pawn
     {  35,  271,  -4                    }, // Knight
     {   0,  105,   4,    0              }, // Bishop
     { -27,   -2,  46,   100,  -141      }, // Rook
