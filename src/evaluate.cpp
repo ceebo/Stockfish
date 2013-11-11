@@ -713,7 +713,7 @@ Value do_evaluate(const Position& pos) {
                               * popcount<Max15>(b)
                               * (Them == pos.side_to_move() ? 2 : 1);
             
-            // Calculate squares we need to cover to give mate.
+            // Calculate squares they need to cover to give mate.
             Bitboard escapes = pos.attacks_from<KING>(ksq) & ~attacked;
             
             while (b) {
@@ -733,10 +733,7 @@ Value do_evaluate(const Position& pos) {
                     {
                         score -= make_score(VALUE_KNOWN_WIN, VALUE_KNOWN_WIN);
                         break;
-                    } /*else {
-                        Log log("xray_escapes.txt");
-                        log << pos.fen() << std::endl;
-                    }*/
+                    }
                 }
             }
         }
