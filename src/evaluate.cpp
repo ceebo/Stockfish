@@ -384,20 +384,20 @@ Value do_evaluate(const Position& pos) {
       if (   pos.non_pawn_material(WHITE) == BishopValueMg
           && pos.non_pawn_material(BLACK) == BishopValueMg)
       {
-          // Double the passed pawn scores but then apply a strong
+          // Increase the passed pawn scores but then apply a strong
           // reduction to the scores as a whole
-          score += passedScore[WHITE] - passedScore[BLACK];
+          score += (passedScore[WHITE] - passedScore[BLACK]) / 2;
 
           if (Trace)
           {
-              Tracing::scores[WHITE][PASSED] += passedScore[WHITE];
-              Tracing::scores[BLACK][PASSED] += passedScore[BLACK];
+              Tracing::scores[WHITE][PASSED] += passedScore[WHITE] / 2;
+              Tracing::scores[BLACK][PASSED] += passedScore[BLACK] / 2;
           }
 
           // Check for KBP vs KB with only a single pawn that is almost
           // certainly a draw or at least two pawns.
           bool one_pawn = (pos.count<PAWN>(WHITE) + pos.count<PAWN>(BLACK) == 1);
-          sf = one_pawn ? ScaleFactor(4) : ScaleFactor(16);
+          sf = one_pawn ? ScaleFactor(5) : ScaleFactor(21);
       }
       else
           // Endgame with opposite-colored bishops, but also other pieces. Still
