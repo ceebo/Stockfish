@@ -312,7 +312,7 @@ Value do_evaluate(const Position& pos) {
   assert(!pos.checkers());
 
   EvalInfo ei;
-  Score score, mobility[2] = { SCORE_ZERO, SCORE_ZERO };
+  Score score, mobility[2] = { SCORE_ZERO, SCORE_ZERO }, passedScore[COLOR_NB];
   Thread* th = pos.this_thread();
 
   // Initialize score by reading the incrementally updated scores included
@@ -353,8 +353,10 @@ Value do_evaluate(const Position& pos) {
           - evaluate_threats<BLACK, Trace>(pos, ei);
 
   // Evaluate passed pawns, we need full attack information including king
-  score +=  evaluate_passed_pawns<WHITE, Trace>(pos, ei)
-          - evaluate_passed_pawns<BLACK, Trace>(pos, ei);
+  passedScore[WHITE] = evaluate_passed_pawns<WHITE, Trace>(pos, ei);
+  passedScore[BLACK] = evaluate_passed_pawns<BLACK, Trace>(pos, ei);
+  
+  score += passedScore[WHITE] - passedScore[BLACK];
 
   // If one side has only a king, score for potential unstoppable pawns
   if (!pos.non_pawn_material(WHITE) || !pos.non_pawn_material(BLACK))
@@ -382,10 +384,20 @@ Value do_evaluate(const Position& pos) {
       if (   pos.non_pawn_material(WHITE) == BishopValueMg
           && pos.non_pawn_material(BLACK) == BishopValueMg)
       {
+          // Double the passed pawn scores but then apply a strong
+          // reduction to the scores as a whole
+          score += passedScore[WHITE] - passedScore[BLACK];
+
+          if (Trace)
+          {
+              Tracing::scores[WHITE][PASSED] += passedScore[WHITE];
+              Tracing::scores[BLACK][PASSED] += passedScore[BLACK];
+          }
+
           // Check for KBP vs KB with only a single pawn that is almost
           // certainly a draw or at least two pawns.
           bool one_pawn = (pos.count<PAWN>(WHITE) + pos.count<PAWN>(BLACK) == 1);
-          sf = one_pawn ? ScaleFactor(8) : ScaleFactor(32);
+          sf = one_pawn ? ScaleFactor(4) : ScaleFactor(16);
       }
       else
           // Endgame with opposite-colored bishops, but also other pieces. Still
