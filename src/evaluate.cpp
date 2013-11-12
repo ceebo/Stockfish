@@ -647,8 +647,9 @@ Value do_evaluate(const Position& pos) {
     Bitboard other_pieces = pos.pieces() ^ pos.pieces(Them, QUEEN);
     Bitboard b;
 
-    b  = PseudoAttacks[ROOK  ][to] & pos.pieces(Us, ROOK,   QUEEN);
-    b |= PseudoAttacks[BISHOP][to] & pos.pieces(Us, BISHOP, QUEEN);
+    b  = PseudoAttacks[ROOK  ][to] & pos.pieces(ROOK,   QUEEN);
+    b |= PseudoAttacks[BISHOP][to] & pos.pieces(BISHOP, QUEEN);
+    b &= pos.pieces(Us);
     
     while (b) {
         Square from = pop_lsb(&b);
