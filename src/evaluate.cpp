@@ -386,18 +386,18 @@ Value do_evaluate(const Position& pos) {
       {
           // Increase the passed pawn scores but then apply a strong
           // reduction to the scores as a whole
-          score += (passedScore[WHITE] - passedScore[BLACK]) / 2;
+          score += (passedScore[WHITE] - passedScore[BLACK]) / 4;
 
           if (Trace)
           {
-              Tracing::scores[WHITE][PASSED] += passedScore[WHITE] / 2;
-              Tracing::scores[BLACK][PASSED] += passedScore[BLACK] / 2;
+              Tracing::scores[WHITE][PASSED] += passedScore[WHITE] / 4;
+              Tracing::scores[BLACK][PASSED] += passedScore[BLACK] / 4;
           }
 
           // Check for KBP vs KB with only a single pawn that is almost
           // certainly a draw or at least two pawns.
           bool one_pawn = (pos.count<PAWN>(WHITE) + pos.count<PAWN>(BLACK) == 1);
-          sf = one_pawn ? ScaleFactor(5) : ScaleFactor(21);
+          sf = one_pawn ? ScaleFactor(6) : ScaleFactor(26);
       }
       else
           // Endgame with opposite-colored bishops, but also other pieces. Still
