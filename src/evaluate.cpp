@@ -217,9 +217,6 @@ namespace {
   const int BishopCheck       = 2;
   const int KnightCheck       = 3;
 
-  // Bonus for mate in one threat
-  const Score QueenMateThreat = make_score(50, 50);
-
   // KingExposed[Square] contains penalties based on the position of the
   // defending king, indexed by king's square (from white's point of view).
   const int KingExposed[] = {
@@ -723,7 +720,7 @@ Value do_evaluate(const Position& pos) {
                 {
                     if (pos.side_to_move() == Us)
                     {
-                        score -= QueenMateThreat;
+                        attackUnits += QueenContactCheck;
                         break;
                     }
 
