@@ -32,6 +32,7 @@ int main(int argc, char* argv[]) {
 
   std::cout << engine_info() << std::endl;
 
+  Material::normalise_pawn_coeffs();
   UCI::init(Options);
   Bitboards::init();
   Position::init();

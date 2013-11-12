@@ -58,6 +58,7 @@ typedef HashTable<Entry, 8192> Table;
 
 Entry* probe(const Position& pos, Table& entries, Endgames& endgames);
 Phase game_phase(const Position& pos);
+void normalise_pawn_coeffs();
 
 /// Material::scale_factor takes a position and a color as input, and
 /// returns a scale factor for the given color. We have to provide the

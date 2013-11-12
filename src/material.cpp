@@ -20,6 +20,7 @@
 #include <algorithm>  // For std::min
 #include <cassert>
 #include <cstring>
+#include <iostream>
 
 #include "material.h"
 
@@ -280,6 +281,92 @@ Phase game_phase(const Position& pos) {
   return  npm >= MidgameLimit ? PHASE_MIDGAME
         : npm <= EndgameLimit ? PHASE_ENDGAME
         : Phase(((npm - EndgameLimit) * 128) / (MidgameLimit - EndgameLimit));
+}
+
+void normalise_pawn_coeffs() {
+
+    // Average value of each piece type converted into the same units
+    // used in the imbalance function
+    double basePawn   = int(PawnValueMg   + PawnValueEg  ) / 2.0 * 16.0;
+    double baseKnight = int(KnightValueMg + KnightValueEg) / 2.0 * 16.0;
+    double baseBishop = int(BishopValueMg + BishopValueEg) / 2.0 * 16.0;
+    double baseRook   = int(RookValueMg   + RookValueEg  ) / 2.0 * 16.0;
+    double baseQueen  = int(QueenValueMg  + QueenValueEg ) / 2.0 * 16.0;
+
+    // Add in all linear terms
+    double basePair   = LinearCoefficients[0];
+
+    basePawn   += LinearCoefficients[PAWN];
+    baseKnight += LinearCoefficients[KNIGHT];
+    baseBishop += LinearCoefficients[BISHOP];
+    baseRook   += LinearCoefficients[ROOK];
+    baseQueen  += LinearCoefficients[QUEEN];
+
+    // Add the average contribution of the quadratic terms
+    double averageQuad2 = (1 + 4) / 2.0;
+    double averageQuad8 = (1 + 4 + 9 + 16 + 25 + 36 + 49 + 64) / 8.0;
+
+    basePawn   += QuadraticCoefficientsSameColor[PAWN  ][PAWN  ] * averageQuad8;
+    baseKnight += QuadraticCoefficientsSameColor[KNIGHT][KNIGHT] * averageQuad2;
+    baseRook   += QuadraticCoefficientsSameColor[ROOK  ][ROOK  ] * averageQuad2;
+
+    double factorPawn   = 2.0 * QuadraticCoefficientsSameColor[PAWN][PAWN] / basePawn;
+    double factorPair   = (  QuadraticCoefficientsSameColor    [PAWN  ][0   ]
+                           - QuadraticCoefficientsOppositeColor[PAWN  ][0   ]) / basePair;
+    double factorKnight = (  QuadraticCoefficientsSameColor    [KNIGHT][PAWN]
+                           + QuadraticCoefficientsOppositeColor[KNIGHT][PAWN]) / baseKnight;
+    double factorBishop = (  QuadraticCoefficientsSameColor    [BISHOP][PAWN]
+                           + QuadraticCoefficientsOppositeColor[BISHOP][PAWN]) / baseBishop;
+    double factorRook   = (  QuadraticCoefficientsSameColor    [ROOK  ][PAWN]
+                           + QuadraticCoefficientsOppositeColor[ROOK  ][PAWN]) / baseRook;
+    double factorQueen  = (  QuadraticCoefficientsSameColor    [QUEEN ][PAWN]
+                           + QuadraticCoefficientsOppositeColor[QUEEN ][PAWN]) / baseQueen;
+
+    std::cout << std::endl;
+    std::cout << "Pawn factor:   " << factorPawn   << std::endl;
+    std::cout << "Pair factor:   " << factorPair   << std::endl;
+    std::cout << "Knight factor: " << factorKnight << std::endl;
+    std::cout << "Bishop factor: " << factorBishop << std::endl;
+    std::cout << "Rook factor:   " << factorRook   << std::endl;
+    std::cout << "Queen factor:  " << factorQueen  << std::endl;
+
+    const double factorNew = 0.01;
+ 
+    std::cout << std::endl << "New chosen factor: " << factorNew  << std::endl << std::endl;
+
+    int coeffPawn = int(0.5 * factorNew * basePawn);
+    int adjustPawn = 8 * (QuadraticCoefficientsSameColor[PAWN][PAWN] - coeffPawn);
+    std::cout << "New quad coeff pawn:   " << coeffPawn << std::endl;
+    std::cout << "New linear coeff pawn: " 
+              << LinearCoefficients[PAWN] + adjustPawn
+              << std::endl;
+
+    int adjustPair   = int( 0.5 * (factorPair   - factorNew) * basePair   );
+    int adjustKnight = int( 0.5 * (factorKnight - factorNew) * baseKnight );
+    int adjustBishop = int( 0.5 * (factorBishop - factorNew) * baseBishop );
+    int adjustRook   = int( 0.5 * (factorRook   - factorNew) * baseRook   );
+    int adjustQueen  = int( 0.5 * (factorQueen  - factorNew) * baseQueen  );
+
+    std::cout << "New coeffs pair:   "
+              << QuadraticCoefficientsSameColor    [PAWN  ][0   ] - adjustPair << " "
+              << QuadraticCoefficientsOppositeColor[PAWN  ][0   ] + adjustPair << std::endl;
+
+    std::cout << "New coeffs knight: "
+              << QuadraticCoefficientsSameColor    [KNIGHT][PAWN] - adjustKnight << " "
+              << QuadraticCoefficientsOppositeColor[KNIGHT][PAWN] - adjustKnight << std::endl;
+
+    std::cout << "New coeffs bishop: "
+              << QuadraticCoefficientsSameColor    [BISHOP][PAWN] - adjustBishop << " "
+              << QuadraticCoefficientsOppositeColor[BISHOP][PAWN] - adjustBishop << std::endl;
+
+    std::cout << "New coeffs rook:   "
+              << QuadraticCoefficientsSameColor    [ROOK  ][PAWN] - adjustRook << " "
+              << QuadraticCoefficientsOppositeColor[ROOK  ][PAWN] - adjustRook << std::endl;
+
+    std::cout << "New coeffs queen:  "
+              << QuadraticCoefficientsSameColor    [QUEEN ][PAWN] - adjustQueen << " "
+              << QuadraticCoefficientsOppositeColor[QUEEN ][PAWN] - adjustQueen << std::endl;
+
 }
 
 } // namespace Material
