@@ -149,6 +149,8 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.222 * pow(d +  0.0, 1.8));
       FutilityMoveCounts[1][d] = int(3.0 +   0.3 * pow(d + 0.98, 1.8));
   }
+  // Search at least 5 moves when evaluation is not decreasing
+  FutilityMoveCounts[1][0] = FutilityMoveCounts[1][1] = FutilityMoveCounts[1][2] = 6;
 }
 
 
