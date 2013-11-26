@@ -494,7 +494,7 @@ namespace {
     Value bestValue, value, ttValue, eval, nullValue, futilityValue;
     bool inCheck, givesCheck, pvMove, singularExtensionNode, improving;
     bool captureOrPromotion, dangerous, doFullDepthSearch;
-    int moveCount, quietCount;
+    int moveCount, quietCount, moveCountLimit;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -765,6 +765,18 @@ moves_loop: // When in check and at SpNode search starts from here
                            && (tte->bound() & BOUND_LOWER)
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
 
+    // Set the limit for futility move count pruning
+    if (depth < 16 * ONE_PLY)
+    {
+        moveCountLimit = FutilityMoveCounts[improving][depth];
+
+        // To avoid problems with lone king fortresses
+        if (!pos.non_pawn_material(pos.side_to_move()))
+            moveCountLimit = std::max(moveCountLimit, 6);
+    }
+    else
+        moveCountLimit = MAX_MOVES;
+
     // Step 11. Loop through moves
     // Loop through all pseudo-legal moves until no moves remain or a beta cutoff occurs
     while ((move = mp.next_move<SpNode>()) != MOVE_NONE)
@@ -849,8 +861,7 @@ moves_loop: // When in check and at SpNode search starts from here
           &&  bestValue > VALUE_MATED_IN_MAX_PLY)
       {
           // Move count based pruning
-          if (   depth < 16 * ONE_PLY
-              && moveCount >= FutilityMoveCounts[improving][depth]
+          if (   moveCount >= moveCountLimit
               && (!threatMove || !refutes(pos, move, threatMove)))
           {
               if (SpNode)
