@@ -1254,6 +1254,16 @@ Value Position::compute_non_pawn_material(Color c) const {
   return value;
 }
 
+bool Position::wrong_bishop_draw(Color c) const {
+
+  Square ksq = king_square(c);
+  
+  return (ksq == relative_square(c, SQ_A1) || ksq == relative_square(c, SQ_H1))
+      && !(pieces(PAWN) & ~file_bb(file_of(ksq)))
+      && non_pawn_material(~c) == BishopValueMg
+      && opposite_colors(ksq, list<BISHOP>(~c)[0]);
+}
+
 
 /// Position::is_draw() tests whether the position is drawn by material,
 /// repetition, or the 50 moves rule. It does not detect stalemates, this
@@ -1267,6 +1277,13 @@ bool Position::is_draw() const {
 
   // Draw by the 50 moves rule?
   if (st->rule50 > 99 && (!checkers() || MoveList<LEGAL>(*this).size()))
+      return true;
+
+  // Check for a wrong bishop draw with a totally bare king
+  if(!more_than_one(pieces(WHITE)) && wrong_bishop_draw(WHITE))
+      return true;
+
+  if(!more_than_one(pieces(BLACK)) && wrong_bishop_draw(BLACK))
       return true;
 
   int i = 4, e = std::min(st->rule50, st->pliesFromNull);
