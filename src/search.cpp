@@ -1219,7 +1219,6 @@ moves_loop: // When in check and at SpNode search starts from here
           && !InCheck
           && !givesCheck
           &&  move != ttMove
-          &&  type_of(move) != PROMOTION
           && !pos.passed_pawn_push(move))
       {
           futilityValue =  futilityBase
