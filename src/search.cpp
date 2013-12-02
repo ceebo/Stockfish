@@ -845,6 +845,15 @@ moves_loop: // When in check and at SpNode search starts from here
       // Update current move (this must be done after singular extension search)
       newDepth = depth - ONE_PLY + ext;
 
+      // Only search underpromotions if there will be no razoring in the 
+      // child node. This should guarantee that qsearch is never called
+      // directly after an underpromotion.
+      if (   !RootNode
+          && newDepth < 4 * ONE_PLY
+          && type_of(move) == PROMOTION
+          && promotion_type(move) != QUEEN)
+          continue;
+
       // Step 13. Pruning at shallow depth (exclude PV nodes)
       if (   !PvNode
           && !captureOrPromotion
@@ -1211,7 +1220,6 @@ moves_loop: // When in check and at SpNode search starts from here
           && !givesCheck
           &&  move != ttMove
           &&  type_of(move) != PROMOTION
-          &&  futilityBase > -VALUE_KNOWN_WIN
           && !pos.passed_pawn_push(move))
       {
           futilityValue =  futilityBase
