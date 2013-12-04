@@ -807,8 +807,8 @@ moves_loop: // When in check and at SpNode search starts from here
       captureOrPromotion = pos.capture_or_promotion(move);
       givesCheck = pos.gives_check(move, ci);
       dangerous =   givesCheck
-                 || pos.advanced_pawn_push(move)
-                 || type_of(move) == CASTLING;
+                 || type_of(move) != NORMAL
+                 || pos.advanced_pawn_push(move);
 
       // Step 12. Extend checks
       if (givesCheck && pos.see_sign(move) >= 0)
