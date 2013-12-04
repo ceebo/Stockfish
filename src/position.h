@@ -327,7 +327,8 @@ inline bool Position::pawn_passed(Color c, Square s) const {
 }
 
 inline bool Position::pawn_push_in_their_half(Move m) const {
-  return pieces(PAWN) & TheirHalf[sideToMove] & from_sq(m);
+  const Bitboard BlackHalf = Rank5BB | Rank6BB | Rank7BB | Rank8BB;
+  return pieces(PAWN) & from_sq(m) & (BlackHalf ^ -Bitboard(sideToMove));
 }
 
 inline Key Position::key() const {
