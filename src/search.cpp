@@ -65,6 +65,9 @@ namespace {
   // Futility lookup tables (initialized at startup) and their access functions
   int FutilityMoveCounts[2][32]; // [improving][depth]
 
+  // Estimates of the evaluation gain when capturing a particular piece
+  Value FutilityValue[PIECE_NB];
+
   inline Value futility_margin(Depth d) {
     return Value(100 * int(d));
   }
@@ -149,6 +152,23 @@ void Search::init() {
       FutilityMoveCounts[0][d] = int(2.4 + 0.222 * pow(d +  0.0, 1.8));
       FutilityMoveCounts[1][d] = int(3.0 +   0.3 * pow(d + 0.98, 1.8));
   }
+
+  // Init futility value array
+
+  // Data found by https://github.com/ceebo/Stockfish/commits/eval_diff
+  double mean[PIECE_TYPE_NB] = { 0, 200.848, 872.192, 941.558, 1281.21, 2668.71 };
+  double stdev[PIECE_TYPE_NB] = { 0, 177.091, 180.518, 186.903, 211.741, 277.158 };
+  double z_score = 0.5;
+
+  //  Log log("futility_vals.txt");
+
+  for (PieceType pt = PAWN; pt <= QUEEN; ++pt) {
+      Value v = Value(mean[pt] + z_score * stdev[pt]) - Value(128);
+      FutilityValue[make_piece(WHITE, pt)] = v;
+      FutilityValue[make_piece(BLACK, pt)] = v;
+      //      log << v << " " << v - PieceValue[EG][make_piece(WHITE, pt)] << std::endl;
+  }
+  //  log << std::endl;
 }
 
 
@@ -1212,7 +1232,7 @@ moves_loop: // When in check and at SpNode search starts from here
       {
           assert(type_of(move) != ENPASSANT); // Due to !pos.advanced_pawn_push
 
-          futilityValue = futilityBase + PieceValue[EG][pos.piece_on(to_sq(move))];
+          futilityValue = futilityBase + FutilityValue[pos.piece_on(to_sq(move))];
 
           if (futilityValue < beta)
           {
