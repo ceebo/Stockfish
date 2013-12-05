@@ -158,7 +158,7 @@ void Search::init() {
   // Data found by https://github.com/ceebo/Stockfish/commits/eval_diff
   double mean[PIECE_TYPE_NB] = { 0, 200.848, 872.192, 941.558, 1281.21, 2668.71 };
   double stdev[PIECE_TYPE_NB] = { 0, 177.091, 180.518, 186.903, 211.741, 277.158 };
-  double z_score = 0.75;
+  double z_score = 1.0;
 
   //  Log log("futility_vals.txt");
 
