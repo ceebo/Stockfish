@@ -117,6 +117,50 @@ namespace {
 } // namespace
 
 
+double eval_diff_sum[PIECE_TYPE_NB];
+double eval_diff_sum2[PIECE_TYPE_NB];
+double eval_diff_num[PIECE_TYPE_NB];
+
+Value eval_diff(Position& pos, Move m) {
+
+    StateInfo st;
+    Value before = evaluate(pos);
+    pos.do_move(m, st);
+    Value after = -evaluate(pos);
+    pos.undo_move(m);
+    if (abs(before) >= VALUE_KNOWN_WIN || abs(after) >= VALUE_KNOWN_WIN)
+        return VALUE_ZERO;
+    else
+        return after - before;
+}
+
+void eval_diff_sample(Position& pos, Move m) {
+
+    double diff = eval_diff(pos, m);
+    PieceType pt = type_of(pos.piece_on(to_sq(m)));
+    eval_diff_num[pt]++;
+    eval_diff_sum[pt] += diff;
+    eval_diff_sum2[pt] += diff * diff;
+}
+
+void eval_diff_log() {
+
+    Log log("eval_diff.txt");
+
+    log << "Averages ";
+    for (PieceType pt = PAWN; pt <= QUEEN; ++pt)
+        log << eval_diff_sum[pt] / eval_diff_num[pt] << ", ";
+
+    log << std::endl << "Std. devs ";
+    for (PieceType pt = PAWN; pt <= QUEEN; ++pt) {
+        double mu = eval_diff_sum[pt] / eval_diff_num[pt];
+        double mu2 = eval_diff_sum2[pt] / eval_diff_num[pt];
+        log << sqrt(mu2 - mu * mu) << ", ";
+    }
+
+    log << std::endl << std::endl;
+}
+
 /// Search::init() is called during startup to initialize various lookup tables
 
 void Search::init() {
@@ -273,6 +317,8 @@ finalize:
       Signals.stopOnPonderhit = true;
       RootPos.this_thread()->wait_for(Signals.stop);
   }
+
+  eval_diff_log();
 
   // Best move could be MOVE_NONE when searching on a stalemate position
   sync_cout << "bestmove " << move_to_uci(RootMoves[0].pv[0], RootPos.is_chess960())
@@ -1211,6 +1257,8 @@ moves_loop: // When in check and at SpNode search starts from here
           && !pos.advanced_pawn_push(move))
       {
           assert(type_of(move) != ENPASSANT); // Due to !pos.advanced_pawn_push
+
+          eval_diff_sample(pos, move);
 
           futilityValue = futilityBase + PieceValue[EG][pos.piece_on(to_sq(move))];
 
