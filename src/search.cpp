@@ -137,10 +137,13 @@ Value eval_diff(Position& pos, Move m) {
 void eval_diff_sample(Position& pos, Move m) {
 
     double diff = eval_diff(pos, m);
-    PieceType pt = type_of(pos.piece_on(to_sq(m)));
-    eval_diff_num[pt]++;
-    eval_diff_sum[pt] += diff;
-    eval_diff_sum2[pt] += diff * diff;
+    if (diff != 0.0)
+    {
+        PieceType pt = type_of(pos.piece_on(to_sq(m)));
+        eval_diff_num[pt]++;
+        eval_diff_sum[pt] += diff;
+        eval_diff_sum2[pt] += diff * diff;
+    }
 }
 
 void eval_diff_log() {
