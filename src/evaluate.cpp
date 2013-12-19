@@ -147,15 +147,9 @@ namespace {
     V(0), V(5), V(8), V(8), V(8), V(8), V(5), V(0) }
   };
 
-  // Threat[attacking][attacked] contains bonuses according to which piece
-  // type attacks which one.
-  const Score Threat[][PIECE_TYPE_NB] = {
-    {}, {},
-    { S(0, 0), S( 7, 39), S( 0,  0), S(24, 49), S(41,100), S(41,100) }, // KNIGHT
-    { S(0, 0), S( 7, 39), S(24, 49), S( 0,  0), S(41,100), S(41,100) }, // BISHOP
-    { S(0, 0), S( 0, 22), S(15, 49), S(15, 49), S( 0,  0), S(24, 49) }, // ROOK
-    { S(0, 0), S(15, 39), S(15, 39), S(15, 39), S(15, 39), S( 0,  0) }  // QUEEN
-  };
+  const Score ThreatMinorOnMajor = S(41, 100);
+  const Score ThreatMinor        = S(18, 45);
+  const Score ThreatMajor        = S(15, 39);
 
   // ThreatenedByPawn[PieceType] contains a penalty according to which piece
   // type is attacked by an enemy pawn.
@@ -747,7 +741,7 @@ Value do_evaluate(const Position& pos) {
 
     const Color Them = (Us == WHITE ? BLACK : WHITE);
 
-    Bitboard b, undefendedMinors, weakEnemies;
+    Bitboard undefendedMinors, weakEnemies, minorThreats;
     Score score = SCORE_ZERO;
 
     // Undefended minors get penalized even if they are not under attack
@@ -762,18 +756,23 @@ Value do_evaluate(const Position& pos) {
                  & ~ei.attackedBy[Them][PAWN]
                  & ei.attackedBy[Us][ALL_PIECES];
 
-    // Add bonus according to type of attacked enemy piece and to the
-    // type of attacking piece, from knights to queens. Kings are not
-    // considered because they are already handled in king evaluation.
     if (weakEnemies)
-        for (PieceType pt1 = KNIGHT; pt1 < KING; ++pt1)
+    {
+        // Evaluate threats by minors
+        minorThreats = weakEnemies & (ei.attackedBy[Us][KNIGHT] | ei.attackedBy[Us][BISHOP]);
+        
+        if (minorThreats)
         {
-            b = ei.attackedBy[Us][pt1] & weakEnemies;
-            if (b)
-                for (PieceType pt2 = PAWN; pt2 < KING; ++pt2)
-                    if (b & pos.pieces(pt2))
-                        score += Threat[pt1][pt2];
+            if (minorThreats & pos.pieces(ROOK, QUEEN))
+                score += ThreatMinorOnMajor;
+            else 
+                score += ThreatMinor;
         }
+        
+        // Evaluate threats by majors
+        if (weakEnemies & (ei.attackedBy[Us][ROOK] | ei.attackedBy[Us][QUEEN]))
+            score += ThreatMajor;
+    }
 
     if (Trace)
         Tracing::scores[Us][THREAT] = score;
