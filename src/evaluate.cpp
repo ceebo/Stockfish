@@ -147,13 +147,6 @@ namespace {
     V(0), V(5), V(8), V(8), V(8), V(8), V(5), V(0) }
   };
 
-  // Threat[attacking][attacked] contains bonuses according to which piece
-  // type attacks which one.
-  const Score Threat[][PIECE_TYPE_NB] = {
-    { S(0, 0), S( 7, 39), S(24, 49), S(24, 49), S(41,100), S(41,100) }, // Minor
-    { S(0, 0), S(15, 39), S(15, 45), S(15, 45), S(15, 45), S(24, 49) }, // Major
-  };
-
   // ThreatenedByPawn[PieceType] contains a penalty according to which piece
   // type is attacked by an enemy pawn.
   const Score ThreatenedByPawn[] = {
@@ -163,6 +156,8 @@ namespace {
   #undef S
 
   const Score Tempo            = make_score(24, 11);
+  const Score ThreatToMajor    = make_score(41, 100);
+  const Score ThreatOther      = make_score(18, 45);
   const Score BishopPin        = make_score(66, 11);
   const Score RookOn7th        = make_score(11, 20);
   const Score QueenOn7th       = make_score( 3,  8);
@@ -744,7 +739,7 @@ Value do_evaluate(const Position& pos) {
 
     const Color Them = (Us == WHITE ? BLACK : WHITE);
 
-    Bitboard b, undefendedMinors, weakEnemies;
+    Bitboard undefendedMinors, weakEnemies, minorThreats;
     Score score = SCORE_ZERO;
 
     // Undefended minors get penalized even if they are not under attack
@@ -762,13 +757,18 @@ Value do_evaluate(const Position& pos) {
     // Add a bonus according if the attacking pieces are minor or major
     if (weakEnemies)
     {
-        b = weakEnemies & (ei.attackedBy[Us][KNIGHT] | ei.attackedBy[Us][BISHOP]);
-        if (b)
-            score += Threat[0][type_of(pos.piece_on(lsb(b)))];
-
-        b = weakEnemies & (ei.attackedBy[Us][ROOK] | ei.attackedBy[Us][QUEEN]);
-        if (b)
-            score += Threat[1][type_of(pos.piece_on(lsb(b)))];
+        minorThreats = weakEnemies & (ei.attackedBy[Us][KNIGHT] | ei.attackedBy[Us][BISHOP]);
+        
+        if (minorThreats)
+        {
+            if (minorThreats & pos.pieces(ROOK, QUEEN))
+                score += ThreatToMajor;
+            else 
+                score += ThreatOther;
+        }
+        
+        if (weakEnemies & (ei.attackedBy[Us][ROOK] | ei.attackedBy[Us][QUEEN]))
+            score += ThreatOther;
     }
 
     if (Trace)
