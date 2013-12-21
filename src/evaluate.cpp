@@ -426,7 +426,8 @@ Value do_evaluate(const Position& pos) {
 
     ei.pinnedPieces[Us] = pos.pinned_pieces(Us);
 
-    Bitboard b = ei.attackedBy[Them][KING] = pos.attacks_from<KING>(pos.king_square(Them));
+    Square ksq = pos.king_square(Them);
+    Bitboard b = ei.attackedBy[Them][KING] = pos.attacks_from<KING>(ksq);
     ei.attackedBy[Us][PAWN] = ei.pi->pawn_attacks(Us);
 
     // Init king safety tables only if we are going to use them
@@ -435,7 +436,8 @@ Value do_evaluate(const Position& pos) {
         ei.kingRing[Them] = b | shift_bb<Down>(b);
         b &= ei.attackedBy[Us][PAWN];
         ei.kingAttackersCount[Us] = b ? popcount<Max15>(b) / 2 : 0;
-        ei.kingAdjacentZoneAttacksCount[Us] = ei.kingAttackersWeight[Us] = 0;
+        ei.kingAdjacentZoneAttacksCount[Us] = 0;
+        ei.kingAttackersWeight[Us] = relative_rank(Them, ksq) >= RANK_4 ? 2 : 0;
     }
     else
         ei.kingRing[Them] = ei.kingAttackersCount[Us] = 0;
