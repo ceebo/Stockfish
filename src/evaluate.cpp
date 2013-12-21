@@ -437,7 +437,7 @@ Value do_evaluate(const Position& pos) {
         b &= ei.attackedBy[Us][PAWN];
         ei.kingAttackersCount[Us] = b ? popcount<Max15>(b) / 2 : 0;
         ei.kingAdjacentZoneAttacksCount[Us] = 0;
-        ei.kingAttackersWeight[Us] = relative_rank(Them, ksq) >= RANK_4 ? 2 : 0;
+        ei.kingAttackersWeight[Us] = b & (relative_rank(Them, ksq) >= RANK_4) ? 2 : 0;
     }
     else
         ei.kingRing[Them] = ei.kingAttackersCount[Us] = 0;
