@@ -633,14 +633,14 @@ Value do_evaluate(const Position& pos) {
     const Color Them = (Us == WHITE ? BLACK : WHITE);
 
     Bitboard undefended, b, b1, b2, safe;
-    int attackUnits;
+    int attackUnits = 0;
     const Square ksq = pos.king_square(Us);
 
     // King shelter and enemy pawns storm
     Score score = ei.pi->king_safety<Us>(pos, ksq);
 
-    // Main king safety evaluation (disabled when kingRing has been set to 0)
-    if (ei.kingRing[Us])
+    // Main king safety evaluation
+    if (ei.kingAttackersCount[Them])
     {
         // Find the attacked squares around the king which have no defenders
         // apart from the king itself
@@ -655,7 +655,7 @@ Value do_evaluate(const Position& pos) {
         // number and types of the enemy's attacking pieces, the number of
         // attacked and undefended squares around our king, the square of the
         // king, and the quality of the pawn shelter.
-        attackUnits =  std::min(20, (ei.kingAttackersCount[Them] * ei.kingAttackersWeight[Them]) / 2)
+        attackUnits += std::min(20, (ei.kingAttackersCount[Them] * ei.kingAttackersWeight[Them]) / 2)
                      + 3 * (ei.kingAdjacentZoneAttacksCount[Them] + popcount<Max15>(undefended))
                      + KingExposed[relative_square(Us, ksq)]
                      - mg_value(score) / 32;
@@ -694,6 +694,10 @@ Value do_evaluate(const Position& pos) {
                               * (Them == pos.side_to_move() ? 2 : 1);
         }
 
+    }
+
+    if (ei.kingRing[Us])
+    {
         // Analyse the enemy's safe distance checks for sliders and knights
         safe = ~(pos.pieces(Them) | ei.attackedBy[Us][ALL_PIECES]);
 
