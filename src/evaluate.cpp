@@ -437,8 +437,10 @@ Value do_evaluate(const Position& pos) {
         ei.kingAttackersCount[Us] = b ? popcount<Max15>(b) : 0;
         ei.kingAdjacentZoneAttacksCount[Us] = ei.kingAttackersWeight[Us] = 0;
     }
-    else
-        ei.kingRing[Them] = ei.kingAdjacentZoneAttacksCount[Us] = 0;
+    else {
+        ei.kingRing[Them] = 0;
+        ei.kingAttackersCount[Us] = -1;
+    }
   }
 
 
@@ -640,7 +642,9 @@ Value do_evaluate(const Position& pos) {
     Score score = ei.pi->king_safety<Us>(pos, ksq);
 
     // Main king safety evaluation
-    if (ei.kingAdjacentZoneAttacksCount[Them])
+    if (       ei.kingAttackersCount[Them] > 0
+        || (   ei.kingAttackersCount[Them] == 0
+            && popcount<Full>(pos.attacks_from<QUEEN>(ksq)) >= 8))
     {
         // Find the attacked squares around the king which have no defenders
         // apart from the king itself
