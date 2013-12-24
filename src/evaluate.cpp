@@ -438,7 +438,7 @@ Value do_evaluate(const Position& pos) {
         ei.kingAdjacentZoneAttacksCount[Us] = ei.kingAttackersWeight[Us] = 0;
     }
     else
-        ei.kingRing[Them] = 0;   // to disable main king safety eval
+        ei.kingRing[Them] = ei.kingAttackersCount[Us] = 0;
   }
 
 
