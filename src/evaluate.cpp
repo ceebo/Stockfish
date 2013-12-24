@@ -438,7 +438,7 @@ Value do_evaluate(const Position& pos) {
         ei.kingAdjacentZoneAttacksCount[Us] = ei.kingAttackersWeight[Us] = 0;
     }
     else
-        ei.kingRing[Them] = ei.kingAdjacentZoneAttacksCount[Us] = 0;
+        ei.kingRing[Them] = 0;   // to disable main king safety eval
   }
 
 
@@ -639,10 +639,8 @@ Value do_evaluate(const Position& pos) {
     // King shelter and enemy pawns storm
     Score score = ei.pi->king_safety<Us>(pos, ksq);
 
-    // Main king safety evaluation
-    if (   ei.kingAdjacentZoneAttacksCount[Them]
-        && (   ei.kingAttackersCount[Them] >= 2
-            || ei.kingAdjacentZoneAttacksCount[Them] >= 3))
+    // Main king safety evaluation (disabled when kingRing has been set to 0)
+    if (ei.kingRing[Us])
     {
         // Find the attacked squares around the king which have no defenders
         // apart from the king itself
