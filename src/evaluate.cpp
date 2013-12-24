@@ -438,7 +438,10 @@ Value do_evaluate(const Position& pos) {
         ei.kingAdjacentZoneAttacksCount[Us] = ei.kingAttackersWeight[Us] = 0;
     }
     else
-        ei.kingRing[Them] = ei.kingAttackersCount[Us] = 0;
+    {
+        ei.kingRing[Them] = 0;
+        ei.kingAttackersCount[Us] = -1;
+    }
   }
 
 
@@ -638,9 +641,10 @@ Value do_evaluate(const Position& pos) {
 
     // King shelter and enemy pawns storm
     Score score = ei.pi->king_safety<Us>(pos, ksq);
+    Score old_score = score;
 
     // Main king safety evaluation
-    if (ei.kingAttackersCount[Them])
+    if (ei.kingAttackersCount[Them] >= 0)
     {
         // Find the attacked squares around the king which have no defenders
         // apart from the king itself
@@ -731,7 +735,17 @@ Value do_evaluate(const Position& pos) {
     if (Trace)
         Tracing::scores[Us][KING] = score;
 
-    return score;
+    if (ei.kingAttackersCount[Them] == 0) {
+        Log log("no_attacks.txt");
+        log << attackUnits << " " << pos.fen() << std::endl;
+    }
+
+    if (ei.kingAttackersCount[Them] == 1) {
+        Log log("one_attack.txt");
+        log << attackUnits << " " << pos.fen() << std::endl;
+    }
+
+    return ei.kingAttackersCount[Them] > 0 ? score : old_score;
   }
 
 
