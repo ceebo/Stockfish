@@ -248,7 +248,7 @@ namespace {
 
   Score evaluate_unstoppable_pawns(const Position& pos, Color us, const EvalInfo& ei);
 
-  Value interpolate(const Score& v, Phase ph, ScaleFactor sf);
+  Value interpolate(const Score& v, Phase ph, ScaleFactor sf, Score ks);
   Score apply_weight(Score v, Score w);
   Score weight_option(const std::string& mgOpt, const std::string& egOpt, Score internalWeight);
   double to_cp(Value v);
@@ -310,7 +310,7 @@ Value do_evaluate(const Position& pos) {
   assert(!pos.checkers());
 
   EvalInfo ei;
-  Score score, mobility[2] = { SCORE_ZERO, SCORE_ZERO };
+  Score score, d, mobility[2] = { SCORE_ZERO, SCORE_ZERO };
   Thread* th = pos.this_thread();
 
   // Initialize score by reading the incrementally updated scores included
@@ -343,8 +343,9 @@ Value do_evaluate(const Position& pos) {
 
   // Evaluate kings after all other pieces because we need complete attack
   // information when computing the king safety evaluation.
-  score +=  evaluate_king<WHITE, Trace>(pos, ei)
-          - evaluate_king<BLACK, Trace>(pos, ei);
+  d =  evaluate_king<WHITE, Trace>(pos, ei)
+     - evaluate_king<BLACK, Trace>(pos, ei);
+  score += d;
 
   // Evaluate tactical threats, we need full attack information including king
   score +=  evaluate_threats<WHITE, Trace>(pos, ei)
@@ -392,7 +393,7 @@ Value do_evaluate(const Position& pos) {
            sf = ScaleFactor(50);
   }
 
-  Value v = interpolate(score, ei.mi->game_phase(), sf);
+  Value v = interpolate(score, ei.mi->game_phase(), sf, d);
 
   // In case of tracing add all single evaluation contributions for both white and black
   if (Trace)
@@ -941,7 +942,7 @@ Value do_evaluate(const Position& pos) {
   // interpolate() interpolates between a middlegame and an endgame score,
   // based on game phase. It also scales the return value by a ScaleFactor array.
 
-  Value interpolate(const Score& v, Phase ph, ScaleFactor sf) {
+  Value interpolate(const Score& v, Phase ph, ScaleFactor sf, Score ks) {
 
     assert(mg_value(v) > -VALUE_INFINITE && mg_value(v) < VALUE_INFINITE);
     assert(eg_value(v) > -VALUE_INFINITE && eg_value(v) < VALUE_INFINITE);
@@ -949,6 +950,18 @@ Value do_evaluate(const Position& pos) {
 
     int e = (eg_value(v) * int(sf)) / SCALE_FACTOR_NORMAL;
     int r = (mg_value(v) * int(ph) + e * int(PHASE_MIDGAME - ph)) / PHASE_MIDGAME;
+
+    const int GreedyLimit = 1059;
+
+    if (abs(r) >= GreedyLimit)
+    {
+        int ks_mg = mg_value(ks);
+        if (r > 0 && ks_mg < 0)
+            r -= (r - GreedyLimit) * std::min(-ks_mg * ph, 65536) / (2 * 65536);
+        else if (r < 0 && ks_mg > 0)
+            r -= (r + GreedyLimit) * std::min( ks_mg * ph, 65536) / (2 * 65536);
+    }
+
     return Value((r / GrainSize) * GrainSize); // Sign independent
   }
 
