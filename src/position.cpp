@@ -34,6 +34,8 @@
 
 using std::string;
 
+#define MASK 63
+
 static const string PieceToChar(" PNBRQK  pnbrqk");
 
 CACHE_LINE_ALIGNMENT
@@ -290,7 +292,7 @@ void Position::set(const string& fenStr, bool isChess960, Thread* th) {
   st->npMaterial[WHITE] = compute_non_pawn_material(WHITE);
   st->npMaterial[BLACK] = compute_non_pawn_material(BLACK);
   st->checkersBB = attackers_to(king_square(sideToMove)) & pieces(~sideToMove);
-  st->rep_hash[0] = 1 << (st->key & 31);
+  st->rep_hash[0] = 1 << (st->key & MASK);
   st->rep_hash[1] = 0;
   st->repetitionPossible = false;
   chess960 = isChess960;
@@ -865,8 +867,8 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
   st->key = k;
   
   // Update repetition hash
-  st->repetitionPossible = st->rep_hash[0] & (1 << (k & 31));
-  st->rep_hash[0] |= 1 << (k & 31);
+  st->repetitionPossible = st->rep_hash[0] & (1 << (k & MASK));
+  st->rep_hash[0] |= 1 << (k & MASK);
 
   // Update checkers bitboard: piece must be already moved
   st->checkersBB = 0;
@@ -1006,7 +1008,7 @@ void Position::do_null_move(StateInfo& newSt) {
 
   ++st->rule50;
   st->pliesFromNull = 0;
-  st->rep_hash[0] = 1 << (st->key & 31);
+  st->rep_hash[0] = 1 << (st->key & MASK);
   st->rep_hash[1] = 0;
   st->repetitionPossible = false;
 
@@ -1241,6 +1243,8 @@ bool Position::is_draw() const {
   if (st->rule50 > 99 && (!checkers() || MoveList<LEGAL>(*this).size()))
       return true;
   
+  dbg_hit_on(st->repetitionPossible);
+
   if (!st->repetitionPossible)
       return false;
 

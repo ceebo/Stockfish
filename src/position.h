@@ -59,7 +59,7 @@ struct StateInfo {
   Bitboard checkersBB;
   PieceType capturedType;
   StateInfo* previous;
-  uint32_t rep_hash[2];
+  uint64_t rep_hash[2];
   bool repetitionPossible;
 };
 
