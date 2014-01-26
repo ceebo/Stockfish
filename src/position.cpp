@@ -34,8 +34,6 @@
 
 using std::string;
 
-#define MASK 63
-
 static const string PieceToChar(" PNBRQK  pnbrqk");
 
 CACHE_LINE_ALIGNMENT
@@ -55,6 +53,17 @@ namespace Zobrist {
 }
 
 Key Position::exclusion_key() const { return st->key ^ Zobrist::exclusion;}
+
+void reset_repetitions(StateInfo* st) {
+  st->rule50 = 0;
+  st->repHashStm = st->repHashnStm = 0;
+}
+
+void update_repetitions(StateInfo* st) {
+  uint64_t k = 1ULL << (st->key & 63);
+  st->repetitionPossible = st->repHashStm & k;
+  st->repHashStm |= k;
+}
 
 namespace {
 
@@ -292,9 +301,7 @@ void Position::set(const string& fenStr, bool isChess960, Thread* th) {
   st->npMaterial[WHITE] = compute_non_pawn_material(WHITE);
   st->npMaterial[BLACK] = compute_non_pawn_material(BLACK);
   st->checkersBB = attackers_to(king_square(sideToMove)) & pieces(~sideToMove);
-  st->rep_hash[sideToMove] = 1ULL << (st->key & MASK);
-  st->rep_hash[~sideToMove] = 0;
-  st->repetitionPossible = false;
+  update_repetitions(st);
   chess960 = isChess960;
   thisThread = th;
 
@@ -706,8 +713,8 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
   std::memcpy(&newSt, st, StateCopySize64 * sizeof(uint64_t));
 
   newSt.previous = st;
-  newSt.rep_hash[WHITE] = st->rep_hash[WHITE];
-  newSt.rep_hash[BLACK] = st->rep_hash[BLACK];
+  newSt.repHashStm = st->repHashnStm;
+  newSt.repHashnStm = st->repHashStm;
   st = &newSt;
 
   // Update side to move
@@ -785,8 +792,7 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
       st->psq -= psq[them][captured][capsq];
 
       // Reset rule 50 counter
-      st->rule50 = 0;
-      st->rep_hash[WHITE] = st->rep_hash[BLACK] = 0;
+      reset_repetitions(st);
   }
 
   // Update hash key
@@ -853,8 +859,7 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
       prefetch((char*)thisThread->pawnsTable[st->pawnKey]);
 
       // Reset rule 50 draw counter
-      st->rule50 = 0;
-      st->rep_hash[WHITE] = st->rep_hash[BLACK] = 0;
+      reset_repetitions(st);
   }
 
   // Update incremental scores
@@ -867,8 +872,7 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
   st->key = k;
   
   // Update repetition hash
-  st->repetitionPossible = st->rep_hash[~sideToMove] & (1ULL << (k & MASK));
-  st->rep_hash[~sideToMove] |= 1ULL << (k & MASK);
+  update_repetitions(st);
 
   // Update checkers bitboard: piece must be already moved
   st->checkersBB = 0;
@@ -1008,9 +1012,8 @@ void Position::do_null_move(StateInfo& newSt) {
 
   ++st->rule50;
   st->pliesFromNull = 0;
-  st->rep_hash[~sideToMove] = 1ULL << (st->key & MASK);
-  st->rep_hash[sideToMove] = 0;
-  st->repetitionPossible = false;
+  reset_repetitions(st);
+  update_repetitions(st);
 
   sideToMove = ~sideToMove;
 
