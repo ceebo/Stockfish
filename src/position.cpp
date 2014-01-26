@@ -59,7 +59,7 @@ void reset_repetitions(StateInfo* st) {
 }
 
 void update_repetitions(StateInfo* st) {
-  uint64_t k = 1ULL << (st->key & 63);
+  uint32_t k = 1 << (st->key & 31);
   st->repetitionPossible = st->repHashStm & k;
   st->repHashStm |= k;
 }
