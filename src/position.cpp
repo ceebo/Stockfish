@@ -292,7 +292,7 @@ void Position::set(const string& fenStr, bool isChess960, Thread* th) {
   st->npMaterial[WHITE] = compute_non_pawn_material(WHITE);
   st->npMaterial[BLACK] = compute_non_pawn_material(BLACK);
   st->checkersBB = attackers_to(king_square(sideToMove)) & pieces(~sideToMove);
-  st->rep_hash[sideToMove] = 1 << (st->key & MASK);
+  st->rep_hash[sideToMove] = 1ULL << (st->key & MASK);
   st->rep_hash[~sideToMove] = 0;
   st->repetitionPossible = false;
   chess960 = isChess960;
@@ -867,8 +867,8 @@ void Position::do_move(Move m, StateInfo& newSt, const CheckInfo& ci, bool moveI
   st->key = k;
   
   // Update repetition hash
-  st->repetitionPossible = st->rep_hash[~sideToMove] & (1 << (k & MASK));
-  st->rep_hash[~sideToMove] |= 1 << (k & MASK);
+  st->repetitionPossible = st->rep_hash[~sideToMove] & (1ULL << (k & MASK));
+  st->rep_hash[~sideToMove] |= 1ULL << (k & MASK);
 
   // Update checkers bitboard: piece must be already moved
   st->checkersBB = 0;
@@ -1008,7 +1008,7 @@ void Position::do_null_move(StateInfo& newSt) {
 
   ++st->rule50;
   st->pliesFromNull = 0;
-  st->rep_hash[~sideToMove] = 1 << (st->key & MASK);
+  st->rep_hash[~sideToMove] = 1ULL << (st->key & MASK);
   st->rep_hash[sideToMove] = 0;
   st->repetitionPossible = false;
 
