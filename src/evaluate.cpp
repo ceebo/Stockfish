@@ -90,9 +90,9 @@ namespace {
   }
 
   // Evaluation weights, indexed by evaluation term
-  enum { Mobility, PawnStructure, PassedPawns, Space, KingSafety };
+  enum { Mobility, PawnStructure, PassedPawns, Space };
   const struct Weight { int mg, eg; } Weights[] = {
-    {289, 344}, {233, 201}, {221, 273}, {46, 0}, {318, 0}
+    {289, 344}, {233, 201}, {221, 273}, {46, 0}
   };
 
   typedef Value V;
@@ -177,25 +177,26 @@ namespace {
     (FileCBB | FileDBB | FileEBB | FileFBB) & (Rank7BB | Rank6BB | Rank5BB)
   };
 
-  // King danger constants and variables. The king danger scores are taken
-  // from KingDanger[]. Various little "meta-bonuses" measuring the strength
-  // of the enemy attack are added up into an integer, which is used as an
-  // index to KingDanger[].
+  // King danger constants and variables. Various little
+  // "meta-bonuses" measuring the strength of the enemy attack are
+  // added up into an integer, which is used to produce a final king
+  // safety score.
   //
   // KingAttackWeights[PieceType] contains king attack weights by piece type
   const int KingAttackWeights[] = { 0, 0, 2, 2, 3, 5 };
 
   // Bonuses for enemy's safe checks
-  const int QueenContactCheck = 24;
-  const int RookContactCheck  = 16;
-  const int QueenCheck        = 12;
-  const int RookCheck         = 8;
-  const int BishopCheck       = 2;
-  const int KnightCheck       = 3;
+  const int QueenContactCheck = 48;
+  const int RookContactCheck  = 32;
+  const int QueenCheck        = 24;
+  const int RookCheck         = 16;
+  const int BishopCheck       = 4;
+  const int KnightCheck       = 6;
 
-  // KingDanger[attackUnits] contains the actual king danger weighted
-  // scores, indexed by a calculated integer number.
-  Score KingDanger[128];
+  // Coefficients used to compute the final King Safety score
+  const int MaxAttackUnits = 122;
+  const int KingSafety_A   = 9802;
+  const int KingSafety_B   = 23;
 
   const int ScalePawnSpan[2] = { 38, 56 };
 
@@ -410,10 +411,10 @@ namespace {
         // number and types of the enemy's attacking pieces, the number of
         // attacked and undefended squares around our king and the quality of
         // the pawn shelter (current 'score' value).
-        attackUnits =  std::min(20, (ei.kingAttackersCount[Them] * ei.kingAttackersWeight[Them]) / 2)
-                     + 3 * (ei.kingAdjacentZoneAttacksCount[Them] + popcount<Max15>(undefended))
-                     + 2 * (ei.pinnedPieces[Us] != 0)
-                     - mg_value(score) / 32;
+        attackUnits =  std::min(40, (ei.kingAttackersCount[Them] * ei.kingAttackersWeight[Them]))
+                     + 6 * (ei.kingAdjacentZoneAttacksCount[Them] + popcount<Max15>(undefended))
+                     + 4 * (ei.pinnedPieces[Us] != 0)
+                     - mg_value(score) / 16;
 
         // Analyse the enemy's safe queen contact checks. Firstly, find the
         // undefended squares around the king that are attacked by the enemy's
@@ -473,12 +474,12 @@ namespace {
         if (b)
             attackUnits += KnightCheck * popcount<Max15>(b);
 
-        // To index KingDanger[] attackUnits must be in [0, 99] range
-        attackUnits = std::min(99, std::max(0, attackUnits));
-
-        // Finally, extract the king danger score from the KingDanger[]
-        // array and subtract the score from evaluation.
-        score -= KingDanger[attackUnits];
+        // Finally, subtract the king danger score from the evaluation
+        if (attackUnits > 0)
+        {
+            unsigned int x = std::min(attackUnits, MaxAttackUnits);
+            score -= make_score(x * x * (KingSafety_A - KingSafety_B * x) / 65536, 0);
+        }
     }
 
     if (Trace)
@@ -875,22 +876,6 @@ namespace Eval {
   /// debugging.
   std::string trace(const Position& pos) {
     return Tracing::do_trace(pos);
-  }
-
-
-  /// init() computes evaluation weights from the corresponding UCI parameters
-  /// and setup king tables.
-
-  void init() {
-
-    const double MaxSlope = 30;
-    const double Peak = 1280;
-
-    for (int t = 0, i = 1; i < 100; ++i)
-    {
-        t = int(std::min(Peak, std::min(0.4 * i * i, t + MaxSlope)));
-        KingDanger[i] = apply_weight(make_score(t, 0), Weights[KingSafety]);
-    }
   }
 
 } // namespace Eval

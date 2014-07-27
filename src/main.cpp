@@ -20,7 +20,6 @@
 #include <iostream>
 
 #include "bitboard.h"
-#include "evaluate.h"
 #include "position.h"
 #include "search.h"
 #include "thread.h"
@@ -37,7 +36,6 @@ int main(int argc, char* argv[]) {
   Bitbases::init_kpk();
   Search::init();
   Pawns::init();
-  Eval::init();
   Threads.init();
   TT.resize(Options["Hash"]);
 
