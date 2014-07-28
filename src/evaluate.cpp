@@ -101,6 +101,28 @@ namespace {
   // MobilityBonus[PieceType][attacked] contains bonuses for middle and end
   // game, indexed by piece type and number of attacked squares not occupied by
   // friendly pieces.
+
+  const Score Adjust[124] = {
+      S(0, 0), S(0, 0), S(0, 0), S(-1, 0), S(-1, 0), S(-2, 0), S(-2, 0),
+      S(-4, 0), S(-2, 0), S(-4, 0), S(-2, 0), S(-5, 0), S(-3, 0), S(-7, 0),
+      S(-5, 0), S(-9, 0), S(-5, 0), S(-10, 0), S(-7, 0), S(-12, 0), S(-8, 0),
+      S(-13, 0), S(-9, 0), S(-15, 0), S(-11, 0), S(-17, 0), S(-11, 0),
+      S(-19, 0), S(-13, 0), S(-21, 0), S(-14, 0), S(-22, 0), S(-15, 0),
+      S(-24, 0), S(-17, 0), S(-26, 0), S(-17, 0), S(-26, 0), S(-18, 0),
+      S(-28, 0), S(-18, 0), S(-29, 0), S(-19, 0), S(-30, 0), S(-20, 0),
+      S(-31, 0), S(-20, 0), S(-31, 0), S(-20, 0), S(-32, 0), S(-20, 0),
+      S(-32, 0), S(-20, 0), S(-32, 0), S(-19, 0), S(-33, 0), S(-19, 0),
+      S(-32, 0), S(-17, 0), S(-31, 0), S(-15, 0), S(-29, 0), S(-14, 0),
+      S(-28, 0), S(-12, 0), S(-27, 0), S(-10, 0), S(-25, 0), S(-8, 0),
+      S(-23, 0), S(-4, 0), S(-20, 0), S(-1, 0), S(-17, 0), S(3, 0), S(-14, 0),
+      S(7, 0), S(-10, 0), S(11, 0), S(-6, 0), S(14, 0), S(-3, 0), S(16, 0),
+      S(-1, 0), S(18, 0), S(0, 0), S(21, 0), S(3, 0), S(21, 0), S(3, 0),
+      S(22, 0), S(3, 0), S(22, 0), S(3, 0), S(22, 0), S(4, 0), S(22, 0),
+      S(3, 0), S(20, 0), S(1, 0), S(19, 0), S(-1, 0), S(18, 0), S(-2, 0),
+      S(16, 0), S(-4, 0), S(13, 0), S(-7, 0), S(10, 0), S(-10, 0), S(8, 0),
+      S(-12, 0), S(4, 0), S(-16, 0), S(1, 0), S(-20, 0), S(-2, 0), S(-23, 0),
+      S(-6, 0), S(-27, 0), S(-11, 0), S(-32, 0), S(-15, 0), S(-19, 0)};
+
   const Score MobilityBonus[][32] = {
     {}, {},
     { S(-65,-50), S(-42,-30), S(-9,-10), S( 3,  0), S(15, 10), S(27, 20), // Knights
@@ -194,7 +216,7 @@ namespace {
   const int KnightCheck       = 6;
 
   // Coefficients used to compute the final King Safety score
-  const int MaxAttackUnits = 122;
+  const int MaxAttackUnits = 123;
   const int KingSafety_A   = 9802;
   const int KingSafety_B   = 23;
 
@@ -411,10 +433,10 @@ namespace {
         // number and types of the enemy's attacking pieces, the number of
         // attacked and undefended squares around our king and the quality of
         // the pawn shelter (current 'score' value).
-        attackUnits =  std::min(40, (ei.kingAttackersCount[Them] * ei.kingAttackersWeight[Them]))
+        attackUnits =  2 * std::min(20, (ei.kingAttackersCount[Them] * ei.kingAttackersWeight[Them]) / 2)
                      + 6 * (ei.kingAdjacentZoneAttacksCount[Them] + popcount<Max15>(undefended))
                      + 4 * (ei.pinnedPieces[Us] != 0)
-                     - mg_value(score) / 16;
+                     - mg_value(score) / 32 * 2;
 
         // Analyse the enemy's safe queen contact checks. Firstly, find the
         // undefended squares around the king that are attacked by the enemy's
@@ -479,6 +501,7 @@ namespace {
         {
             unsigned int x = std::min(attackUnits, MaxAttackUnits);
             score -= make_score(x * x * (KingSafety_A - KingSafety_B * x) / 65536, 0);
+            score -= Adjust[x];
         }
     }
 
