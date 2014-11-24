@@ -474,6 +474,12 @@ namespace {
         if (b)
             attackUnits += KnightCheck * popcount<Max15>(b);
 
+        // Bishops next to an enemy king can be vulnerable
+        if (  ei.attackedBy[Us][KING]
+            & pos.pieces(Them, BISHOP)
+            & ~ei.attackedBy[Them][PAWN])
+            attackUnits -= 10;
+
         // To index KingDanger[] attackUnits must be in [0, 99] range
         attackUnits = std::min(99, std::max(0, attackUnits));
 
