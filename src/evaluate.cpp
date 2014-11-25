@@ -474,6 +474,10 @@ namespace {
         if (b)
             attackUnits += KnightCheck * popcount<Max15>(b);
 
+        // If we threaten their queen it may hinder the enemy attack
+        if (ei.attackedBy[Us][ALL_PIECES] & pos.pieces(Them, QUEEN))
+            attackUnits -= 10;
+
         // To index KingDanger[] attackUnits must be in [0, 99] range
         attackUnits = std::min(99, std::max(0, attackUnits));
 
