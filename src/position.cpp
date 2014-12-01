@@ -147,14 +147,12 @@ void Position::init() {
   for (File f = FILE_A; f <= FILE_H; ++f)
       Zobrist::enpassant[f] = rk.rand<Key>();
 
-  for (int cf = NO_CASTLING; cf <= ANY_CASTLING; ++cf)
+  Zobrist::castling[NO_CASTLING] = 0;
+  for (int topbit = WHITE_OO; topbit <= BLACK_OOO; topbit *= 2)
   {
-      Bitboard b = cf;
-      while (b)
-      {
-          Key k = Zobrist::castling[1ULL << pop_lsb(&b)];
-          Zobrist::castling[cf] ^= k ? k : rk.rand<Key>();
-      }
+      Key k = rk.rand<Key>();
+      for (int lowerbits = 0; lowerbits < topbit; lowerbits++)
+          Zobrist::castling[topbit | lowerbits] = k ^ Zobrist::castling[lowerbits];
   }
 
   Zobrist::side = rk.rand<Key>();
