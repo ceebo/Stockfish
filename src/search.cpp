@@ -473,6 +473,9 @@ void Thread::search() {
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
 
+          if (rootMoves[PVIdx].score <= alpha)
+              std::cout << "DebugB" << std::endl;
+          
           // Sort the PV lines searched so far and update the GUI
           std::stable_sort(rootMoves.begin(), rootMoves.begin() + PVIdx + 1);
 
@@ -592,6 +595,31 @@ namespace {
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
     if (PvNode && thisThread->selDepth < ss->ply + 1)
         thisThread->selDepth = ss->ply + 1;
+    
+    int bestWDL = -1000;
+    int bestDTZ = 1000;
+    int bestMoveWDL = -1000;
+    int bestMoveDTZ = 1000;
+    bool broke_alpha_with_best_rank = false;
+    bool broke_alpha = false;
+    int start_alpha = alpha;
+    int start_beta = beta;
+
+    // Find the best available move according to TB information
+    if (rootNode) {
+        for (auto it = thisThread->rootMoves.begin() + thisThread->PVIdx;
+             it != thisThread->rootMoves.end(); it++) {
+            
+            RootMove& rm = *it;
+
+            if (rm.wdl > bestWDL) {
+                bestWDL = rm.wdl;
+                bestDTZ = rm.dtz;
+            } else if (rm.wdl == bestWDL && rm.dtz < bestDTZ) {
+                bestDTZ = rm.dtz;
+            }
+        }
+    }
 
     if (!rootNode)
     {
@@ -1052,6 +1080,17 @@ moves_loop: // When in check search starts from here
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
 
+          if (value > alpha) {
+
+              bestMoveWDL = rm.wdl;
+              bestMoveDTZ = rm.dtz;
+
+              broke_alpha = true;
+
+              if (rm.wdl == bestWDL && rm.dtz == bestDTZ)
+                  broke_alpha_with_best_rank = true;
+          }
+          
           // PV move or new best move ?
           if (moveCount == 1 || value > alpha)
           {
@@ -1143,6 +1182,17 @@ moves_loop: // When in check search starts from here
                   depth, bestMove, ss->staticEval, TT.generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
+
+    if (rootNode && broke_alpha && !broke_alpha_with_best_rank) {
+        std::cout << "DebugA: "
+                  << bestMoveWDL << " "
+                  << bestWDL << " "
+                  << bestMoveDTZ << " "
+                  << bestDTZ << " "
+                  << start_alpha << " "
+                  << start_beta << " "
+                  << bestValue << std::endl;
+    }
 
     return bestValue;
   }
