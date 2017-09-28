@@ -69,6 +69,7 @@ struct RootMove {
   int selDepth = 0;
   int dtz = 0;
   int wdl = 0;
+  bool failed_low;
   std::vector<Move> pv;
 };
 

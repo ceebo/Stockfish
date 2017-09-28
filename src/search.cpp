@@ -473,6 +473,9 @@ void Thread::search() {
               assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
           }
 
+          if (rootMoves[PVIdx].failed_low)
+              std::cout << "==== Best move failed low!? ====" << std::endl;
+
           // Sort the PV lines searched so far and update the GUI
           std::stable_sort(rootMoves.begin(), rootMoves.begin() + PVIdx + 1);
 
@@ -1051,6 +1054,8 @@ moves_loop: // When in check search starts from here
       {
           RootMove& rm = *std::find(thisThread->rootMoves.begin(),
                                     thisThread->rootMoves.end(), move);
+
+          rm.failed_low = (value <= alpha);
 
           // PV move or new best move ?
           if (moveCount == 1 || value > alpha)
