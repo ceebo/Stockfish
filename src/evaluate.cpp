@@ -676,17 +676,21 @@ namespace {
                 // in the pawn's path attacked or occupied by the enemy.
                 defendedSquares = unsafeSquares = squaresToQueen = forward_file_bb(Us, s);
 
-                bb = forward_file_bb(Them, s) & pos.pieces(ROOK, QUEEN) & pos.attacks_from<ROOK>(s);
+                bb = forward_file_bb(Them, s) & pos.attacks_from<ROOK>(s);
+                Bitboard qr_behind = bb & pos.pieces(ROOK, QUEEN);
 
-                if (!(pos.pieces(Us) & bb))
+                if (!(pos.pieces(Us) & qr_behind))
                     defendedSquares &= attackedBy[Us][ALL_PIECES];
 
-                if (!(pos.pieces(Them) & bb))
+                if (!(pos.pieces(Them) & qr_behind))
                     unsafeSquares &= attackedBy[Them][ALL_PIECES] | pos.pieces(Them);
 
-                // If there aren't any enemy attacks, assign a big bonus. Otherwise
-                // assign a smaller bonus if the block square isn't attacked.
-                int k = !unsafeSquares ? 18 : !(unsafeSquares & blockSq) ? 8 : 0;
+                // If there aren't any enemy attacks, assign a big bonus (reduced if the
+                // enemy can move a rook or queen to an undefended square behind the pawn).
+                // Otherwise assign a smaller bonus if the block square isn't attacked.
+                int k = unsafeSquares ? (!(unsafeSquares & blockSq) ? 8 : 0)
+                    : (((attackedBy[Them][ROOK] | attackedBy[Them][QUEEN]) & ~pos.pieces(Them)
+                        & ~attackedBy[Us][ALL_PIECES] & bb) ? 14 : 18);
 
                 // If the path to the queen is fully defended, assign a big bonus.
                 // Otherwise assign a smaller bonus if the block square is defended.
