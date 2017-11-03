@@ -631,6 +631,11 @@ namespace {
   // evaluate_passed_pawns() evaluates the passed pawns and candidate passed
   // pawns of the given color.
 
+  int k_old = 18, k_new = 14;
+
+  TUNE(SetRange(10,25), k_old);
+  TUNE(SetRange(5,20), k_new);
+
   template<Tracing T>  template<Color Us>
   Score Evaluation<T>::evaluate_passed_pawns() {
 
@@ -690,7 +695,7 @@ namespace {
                 // Otherwise assign a smaller bonus if the block square isn't attacked.
                 int k = unsafeSquares ? (!(unsafeSquares & blockSq) ? 8 : 0)
                     : (((attackedBy[Them][ROOK] | attackedBy[Them][QUEEN]) & ~pos.pieces(Them)
-                        & ~attackedBy[Us][ALL_PIECES] & bb) ? 14 : 18);
+                        & ~attackedBy[Us][ALL_PIECES] & bb) ? k_new : k_old);
 
                 // If the path to the queen is fully defended, assign a big bonus.
                 // Otherwise assign a smaller bonus if the block square is defended.
