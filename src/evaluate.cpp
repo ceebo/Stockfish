@@ -23,6 +23,7 @@
 #include <cstring>   // For std::memset
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "evaluate.h"
@@ -30,6 +31,8 @@
 #include "pawns.h"
 
 namespace {
+
+  int last_imbalance = 0;
 
   const Bitboard Center      = (FileDBB | FileEBB) & (Rank4BB | Rank5BB);
   const Bitboard QueenSide   = FileABB | FileBBB | FileCBB | FileDBB;
@@ -822,6 +825,17 @@ namespace {
     // configuration, call it and return.
     if (me->specialized_eval_exists())
         return me->evaluate(pos);
+
+    if (   pos.non_pawn_material(WHITE) == RookValueMg
+        && pos.non_pawn_material(BLACK) == RookValueMg
+        && pos.count<PAWN>(WHITE) == 1
+        && pos.count<PAWN>(BLACK) == 0
+        && me->imbalance() != last_imbalance) {
+        last_imbalance = me->imbalance();
+        std::cout << "new imbalance for krpkr: " 
+                  << eg_value(me->imbalance()) << " "
+                  << mg_value(me->imbalance()) << std::endl;
+    }
 
     // Initialize score by reading the incrementally updated scores included in
     // the position object (material + piece square tables) and the material
