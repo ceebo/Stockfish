@@ -1003,21 +1003,17 @@ bool Position::see_ge(Move m, Value threshold) const {
   Value balance; // Values of the pieces taken by us minus opponent's ones
   Bitboard occupied, stmAttackers;
 
-  // The opponent may be able to recapture so this is the best result
-  // we can hope for.
-  balance = PieceValue[MG][piece_on(to)] - threshold;
+  balance = PieceValue[MG][piece_on(to)];
 
-  if (balance < VALUE_ZERO)
+  if (balance < threshold)
       return false;
 
-  // Now assume the worst possible result: that the opponent can
-  // capture our piece for free.
   balance -= PieceValue[MG][nextVictim];
 
-  if (balance >= VALUE_ZERO) // Always true if nextVictim == KING
+  if (balance >= threshold) // Always true if nextVictim == KING
       return true;
 
-  bool opponentToMove = true;
+  bool relativeStm = true; // True if the opponent is to move
   occupied = pieces() ^ from ^ to;
 
   // Find all attackers to the destination square, with the moving piece removed,
@@ -1026,12 +1022,6 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   while (true)
   {
-      // The balance is negative only because we assumed we could win
-      // the last piece for free. We are truly winning only if we can
-      // win the last piece _cheaply enough_. Test if we can actually
-      // do this otherwise "give up".
-      assert(balance < VALUE_ZERO);
-
       stmAttackers = attackers & pieces(stm);
 
       // Don't allow pinned pieces to attack pieces except the king as long all
@@ -1039,40 +1029,25 @@ bool Position::see_ge(Move m, Value threshold) const {
       if (!(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
-      // If we have no more attackers we must give up
       if (!stmAttackers)
-          break;
+          return relativeStm;
 
       // Locate and remove the next least valuable attacker
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
 
       if (nextVictim == KING)
-      {
-          // Our only attacker is the king. If the opponent still has
-          // attackers we must give up. Otherwise we make the move and
-          // (having no more attackers) the opponent must give up.
-          if (!(attackers & pieces(~stm)))
-              opponentToMove = !opponentToMove;
-          break;
-      }
+          return relativeStm == bool(attackers & pieces(~stm));
 
-      // Assume the opponent can win the next piece for free and switch sides
-      balance += PieceValue[MG][nextVictim];
-      opponentToMove = !opponentToMove;
+      balance += relativeStm ?  PieceValue[MG][nextVictim]
+                             : -PieceValue[MG][nextVictim];
 
-      // If balance is negative after receiving a free piece then give up
-      if (balance < VALUE_ZERO)
-          break;
+      relativeStm = !relativeStm;
 
-      // Complete the process of switching sides. The first line swaps
-      // all negative numbers with non-negative numbers. The compiler
-      // probably knows that it is just the bitwise negation ~balance.
-      balance = -balance-1;
+      if (relativeStm == (balance >= threshold))
+          return relativeStm;
+
       stm = ~stm;
   }
-
-  // If the opponent gave up we win, otherwise we lose.
-  return opponentToMove;
 }
 
 
