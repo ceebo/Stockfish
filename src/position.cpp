@@ -338,10 +338,12 @@ void Position::set_check_info(StateInfo* si) const {
 
 void Position::set_state(StateInfo* si) const {
 
+  Value contempt = Options["Contempt"] * PawnValueEg / 100;
+
   si->key = si->materialKey = 0;
   si->pawnKey = Zobrist::noPawns;
   si->nonPawnMaterial[WHITE] = si->nonPawnMaterial[BLACK] = VALUE_ZERO;
-  si->psq = SCORE_ZERO;
+  si->psq = make_score(sideToMove == WHITE ? contempt : -contempt, 0);
   si->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
 
   set_check_info(si);
