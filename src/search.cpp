@@ -197,10 +197,8 @@ void MainThread::search() {
 
   Color us = rootPos.side_to_move();
   Time.init(Limits, us, rootPos.game_ply());
+  rootPos.apply_contempt();
   TT.new_search();
-
-  int contempt = Options["Contempt"] * PawnValueEg / 100; // From centipawns
-  Eval::Contempt = make_score(us == WHITE ? contempt : -contempt, 0);
 
   if (rootMoves.empty())
   {

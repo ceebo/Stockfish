@@ -1106,6 +1106,10 @@ bool Position::is_draw(int ply) const {
   return false;
 }
 
+void Position::apply_contempt() {
+  Score contempt = make_score(Options["Contempt"] * PawnValueEg / 100, 0);
+  st->psq += sideToMove == WHITE ? contempt : -contempt;
+}
 
 /// Position::flip() flips position with the white and black sides reversed. This
 /// is only useful for debugging e.g. for finding evaluation symmetry bugs.
