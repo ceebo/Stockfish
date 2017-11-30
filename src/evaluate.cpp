@@ -223,6 +223,7 @@ namespace {
   const Score ThreatByHangingPawn = S( 71, 61);
   const Score ThreatBySafePawn    = S(192,175);
   const Score ThreatByRank        = S( 16,  3);
+  const Score EntryThreat         = S(  0, 15);
   const Score Hanging             = S( 48, 27);
   const Score WeakUnopposedPawn   = S(  5, 25);
   const Score ThreatByPawnPush    = S( 38, 22);
@@ -589,6 +590,10 @@ namespace {
         if (b)
             score += ThreatByKing[more_than_one(b)];
     }
+
+    // Bonus for King attacking an entry square
+    if (attackedBy[Us][KING] & pe->entrySquares[Them])
+        score += EntryThreat;
 
     // Bonus for opponent unopposed weak pawns
     if (pos.pieces(Us, ROOK, QUEEN))
