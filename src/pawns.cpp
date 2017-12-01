@@ -43,6 +43,8 @@ namespace {
   // Doubled pawn penalty
   const Score Doubled = S(18, 38);
 
+  const Score DoubledAndIsolated = S(26, 46);
+
   // Lever bonus by rank
   const Score Lever[RANK_NB] = {
     S( 0,  0), S( 0,  0), S(0, 0), S(0, 0),
@@ -183,7 +185,7 @@ namespace {
             score -= Backward, e->weakUnopposed[Us] += !opposed;
 
         if (doubled && !supported)
-            score -= Doubled;
+            score -= neighbours ? Doubled : DoubledAndIsolated;
 
         if (lever)
             score += Lever[relative_rank(Us, s)];
