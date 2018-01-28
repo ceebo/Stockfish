@@ -1036,7 +1036,7 @@ bool Position::see_ge(Move m, Value threshold) const {
 
       // If all pinners are on their original square then only keep attackers
       // that are in line with the king and the 'to' square or are not pinned.
-      if (!(st->pinnersForKing[stm] & ~occupied))
+      if (st->pinnersForKing[stm] && !(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= LineBB[to][square<KING>(stm)] | ~st->blockersForKing[stm];
 
       // If we have no more attackers we must give up
