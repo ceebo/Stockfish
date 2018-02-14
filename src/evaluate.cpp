@@ -407,12 +407,12 @@ namespace {
 #endif
 
 #ifdef THREECHECK
-  const Score ChecksGivenBonus[CHECKS_NB] = {
-      S(0, 0),
-      S(444, 181),
-      S(2425, 603),
-      S(0, 0)
-  };
+  const Score ChecksGivenBonus[CHECKS_NB][CHECKS_NB] = {
+      { S(0, 0), S(444, 181), S(2425, 603), S(0, 0) },
+      { S(0, 0), S(  0,   0), S(1981, 422), S(0, 0) },
+      { S(0, 0), S(  0,   0), S(   0,   0), S(0, 0) },
+      { S(0, 0), S(  0,   0), S(   0,   0), S(0, 0) }
+  }
 #endif
 
 #ifdef KOTH
@@ -1357,8 +1357,8 @@ namespace {
     score += ThreatByPawnPush * popcount(b);
 
 #ifdef THREECHECK
-    if (pos.is_three_check())
-        score += ChecksGivenBonus[pos.checks_given(Us)];
+    if (pos.is_three_check() && pos.checks_give(Us) > pos.checks_given(Them))
+        score += ChecksGivenBonus[pos.checks_given(Them)][pos.checks_given(Us)];
 #endif
 #ifdef HORDE
     if (pos.is_horde() && pos.is_horde_color(Them))
