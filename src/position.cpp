@@ -75,7 +75,7 @@ PieceType min_attacker(const Bitboard* bb, Square to, Bitboard stmAttackers,
   if (Pt == ROOK || Pt == QUEEN)
       attackers |= attacks_bb<ROOK>(to, occupied) & (bb[ROOK] | bb[QUEEN]);
 
-  attackers &= occupied; // After X-ray that may add already processed pieces
+  attackers &= occupied; // X-ray may add already processed pieces through bb[]
   return (PieceType)Pt;
 }
 
@@ -999,9 +999,8 @@ bool Position::see_ge(Move m, Value threshold) const {
 
   Square from = from_sq(m), to = to_sq(m);
   PieceType nextVictim = type_of(piece_on(from));
-  Color stm = ~color_of(piece_on(from)); // First consider opponent's move
+  Color us = color_of(piece_on(from)), stm = ~us; // First consider opponent's move
   Value balance; // Values of the pieces taken by us minus opponent's ones
-  Bitboard occupied, stmAttackers;
 
   // The opponent may be able to recapture so this is the best result
   // we can hope for.
@@ -1014,65 +1013,55 @@ bool Position::see_ge(Move m, Value threshold) const {
   // capture our piece for free.
   balance -= PieceValue[MG][nextVictim];
 
-  if (balance >= VALUE_ZERO) // Always true if nextVictim == KING
+  // If it's enough (like in PxQ) then return immediately. Note that
+  // in case nextVictim == KING we always return here, this is ok
+  // if the given move is legal.
+  if (balance >= VALUE_ZERO)
       return true;
 
-  bool opponentToMove = true;
-  occupied = pieces() ^ from ^ to;
-
-  // Find all attackers to the destination square, with the moving piece removed,
-  // but possibly an X-ray attacker added behind it.
+  // Find all attackers to the destination square, with the moving piece
+  // removed, but possibly an X-ray attacker added behind it.
+  Bitboard occupied = pieces() ^ from ^ to;
   Bitboard attackers = attackers_to(to, occupied) & occupied;
+  Bitboard stmAttackers = attackers & pieces(stm);
 
   while (true)
   {
-      // The balance is negative only because we assumed we could win
-      // the last piece for free. We are truly winning only if we can
-      // win the last piece _cheaply enough_. Test if we can actually
-      // do this otherwise "give up".
-      assert(balance < VALUE_ZERO);
-
-      stmAttackers = attackers & pieces(stm);
-
-      // Don't allow pinned pieces to attack pieces except the king as long all
+      // Don't allow pinned to attack pieces except the king as long all
       // pinners are on their original square.
       if (!(st->pinnersForKing[stm] & ~occupied))
           stmAttackers &= ~st->blockersForKing[stm];
 
-      // If we have no more attackers we must give up
+      // If stm has no more attackers then give up: stm loses
       if (!stmAttackers)
           break;
 
-      // Locate and remove the next least valuable attacker
+      // Locate and remove the next least valuable attacker and add to
+      // 'attackers' the possibly X-ray attackers behind it.
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
 
-      if (nextVictim == KING)
-      {
-          // Our only attacker is the king. If the opponent still has
-          // attackers we must give up. Otherwise we make the move and
-          // (having no more attackers) the opponent must give up.
-          if (!(attackers & pieces(~stm)))
-              opponentToMove = !opponentToMove;
-          break;
-      }
-
-      // Assume the opponent can win the next piece for free and switch sides
-      balance += PieceValue[MG][nextVictim];
-      opponentToMove = !opponentToMove;
-
-      // If balance is negative after receiving a free piece then give up
-      if (balance < VALUE_ZERO)
-          break;
-
-      // Complete the process of switching sides. The first line swaps
-      // all negative numbers with non-negative numbers. The compiler
-      // probably knows that it is just the bitwise negation ~balance.
-      balance = -balance-1;
+      // Switch side to move
       stm = ~stm;
-  }
+      stmAttackers = attackers & pieces(stm);
 
-  // If the opponent gave up we win, otherwise we lose.
-  return opponentToMove;
+      // Next victim is the king. If stm still has attackers
+      // then wins. Otherwise king moves and stm, having no
+      // more attackers, must give up.
+      if (nextVictim == KING)
+          return stmAttackers ? us == stm : us != stm;
+
+      // Now assume stm can capture next victim for free. Switch also balance
+      // sign according to negamax with alpha = balance, beta = balance+1
+      //
+      //         balance, balance+1 -> -balance-1, -balance
+      //
+      balance = -balance - 1 - PieceValue[MG][nextVictim];
+
+      // If it's still not enough then stop, no need to continue: stm loses
+      if (balance >= VALUE_ZERO)
+          break;
+  }
+  return us != stm; // If the opponent gave up we win, otherwise we lose
 }
 
 
