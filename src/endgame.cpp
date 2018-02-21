@@ -285,7 +285,8 @@ Value Endgame<KQKP>::operator()(const Position& pos) const {
   Value result = Value(PushClose[distance(winnerKSq, loserKSq)]);
 
   if (   relative_rank(weakSide, pawnSq) != RANK_7
-      || distance(loserKSq, pawnSq) != 1
+      || relative_rank(weakSide, loserKSq) <= RANK_6
+      || distance(loserKSq, pawnSq) > 2
       || !((FileABB | FileCBB | FileFBB | FileHBB) & pawnSq))
       result += QueenValueEg - PawnValueEg;
 
