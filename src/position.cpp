@@ -1040,26 +1040,32 @@ bool Position::see_ge(Move m, Value threshold) const {
       // 'attackers' the possibly X-ray attackers behind it.
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
 
-      // Switch side to move
-      stm = ~stm;
-      stmAttackers = attackers & pieces(stm);
-
-      // Next victim is the king. If stm still has attackers
-      // then wins. Otherwise king moves and stm, having no
-      // more attackers, must give up.
-      if (nextVictim == KING)
-          return stmAttackers ? us == stm : us != stm;
-
       // Now assume stm can capture next victim for free. Switch also balance
       // sign according to negamax with alpha = balance, beta = balance+1
       //
       //         balance, balance+1 -> -balance-1, -balance
       //
+      assert(balance < VALUE_ZERO);
+
       balance = -balance - 1 - PieceValue[MG][nextVictim];
 
       // If it's still not enough then stop, no need to continue: stm loses
+      // If nextVictim == KING then condition is always true.
       if (balance >= VALUE_ZERO)
+      {
+          // Next victim is the king. If stm still has attackers
+          // then wins. Otherwise king moves and stm, having no
+          // more attackers, must give up.
+          if (nextVictim == KING && !(attackers & pieces(~stm)))
+              stm = ~stm;
           break;
+      }
+
+      assert(nextVictim != KING);
+
+      // Switch side to move
+      stm = ~stm;
+      stmAttackers = attackers & pieces(stm);
   }
   return us != stm; // If the opponent gave up we win, otherwise we lose
 }
