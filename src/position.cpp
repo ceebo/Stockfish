@@ -1023,10 +1023,12 @@ bool Position::see_ge(Move m, Value threshold) const {
   // removed, but possibly an X-ray attacker added behind it.
   Bitboard occupied = pieces() ^ from ^ to;
   Bitboard attackers = attackers_to(to, occupied) & occupied;
-  Bitboard stmAttackers = attackers & pieces(stm);
+  Bitboard stmAttackers;
 
   while (true)
   {
+      stmAttackers = attackers & pieces(stm);
+
       // Don't allow pinned to attack pieces except the king as long all
       // pinners are on their original square.
       if (!(st->pinnersForKing[stm] & ~occupied))
@@ -1040,6 +1042,16 @@ bool Position::see_ge(Move m, Value threshold) const {
       // 'attackers' the possibly X-ray attackers behind it.
       nextVictim = min_attacker<PAWN>(byTypeBB, to, stmAttackers, occupied, attackers);
 
+      // Next victim is the king. If stm still has attackers
+      // then wins. Otherwise king moves and stm, having no
+      // more attackers, must give up.
+      if (nextVictim == KING)
+      {
+          if (!(attackers & pieces(~stm)))
+	       stm = ~stm;
+          break;
+      }
+
       // Now assume stm can capture next victim for free. Switch also balance
       // sign according to negamax with alpha = balance, beta = balance+1
       //
@@ -1048,24 +1060,11 @@ bool Position::see_ge(Move m, Value threshold) const {
       assert(balance < VALUE_ZERO);
 
       balance = -balance - 1 - PieceValue[MG][nextVictim];
+      stm = ~stm;
 
       // If it's still not enough then stop, no need to continue: stm loses
-      // If nextVictim == KING then condition is always true.
       if (balance >= VALUE_ZERO)
-      {
-          // Next victim is the king. If stm still has attackers
-          // then wins. Otherwise king moves and stm, having no
-          // more attackers, must give up.
-          if (nextVictim == KING && !(attackers & pieces(~stm)))
-              stm = ~stm;
           break;
-      }
-
-      assert(nextVictim != KING);
-
-      // Switch side to move
-      stm = ~stm;
-      stmAttackers = attackers & pieces(stm);
   }
   return us != stm; // If the opponent gave up we win, otherwise we lose
 }
