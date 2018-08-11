@@ -32,11 +32,11 @@ namespace {
   constexpr int QuadraticOurs[][PIECE_TYPE_NB] = {
     //            OUR PIECES
     // pair pawn knight bishop rook queen
-    {1667                               }, // Bishop pair
+    {1443                               }, // Bishop pair
     {  40,    0                         }, // Pawn
-    {  32,  255,  -3                    }, // Knight      OUR PIECES
+    {  32,  255, -67                    }, // Knight      OUR PIECES
     {   0,  104,   4,    0              }, // Bishop
-    { -26,   -2,  47,   105,  -149      }, // Rook
+    { -26,   -2,  47,   105,  -221      }, // Rook
     {-189,   24, 117,   133,  -134, -10 }  // Queen
   };
 
@@ -52,11 +52,7 @@ namespace {
   };
   
   // Game stage bonuses - contains a bonus/malus, depending on the number of certain pieces
-  constexpr int GameStagePawns[]   = { 20, 43, 37, 12, 1, -4, 2, 19, 32 };
-  constexpr int GameStageKnights[] = { -6, 22, 42,  8 };
-  constexpr int GameStageBishops[] = { -2, 26, 40, -8 };
-  constexpr int GameStageRooks[]   = {  4, 24, 35, -7 };
-  constexpr int GameStageQueens[]  = {-13, 54,-28 };
+  constexpr int GameStagePawns[]   = { 0, 304, 144, -320, -560, -704, -672, -464,-320 };
 
   // Endgame evaluation and scaling functions are accessed directly and not through
   // the function maps because they correspond to more than one material hash key.
@@ -94,20 +90,12 @@ namespace {
 
   constexpr Color Them = (Us == WHITE ? BLACK : WHITE);
 
-   // Game stage coefficient k1, being the sum of game stage bonuses
-   int k1 = 0;
-   k1 += GameStagePawns[std::min(pieceCount[Us][PAWN], 8)];
-   k1 += GameStageKnights[std::min(pieceCount[Us][KNIGHT], 3)];
-   k1 += GameStageBishops[std::min(pieceCount[Us][BISHOP], 3)];
-   k1 += GameStageRooks[std::min(pieceCount[Us][ROOK], 3)];
-   k1 += GameStageQueens[std::min(pieceCount[Us][QUEEN], 2)];
-    
-  // Game stage coefficient k2, being the index of nominal game stage
-    int k2 = (pieceCount[Us][PAWN] + pieceCount[Us][KNIGHT] * 3 + pieceCount[Us][BISHOP] * 3 + pieceCount[Us][ROOK] * 5 + pieceCount[Us][QUEEN] * 10);
-  
-  // Initial bonus
-    int bonus = (k1 - (k2 * 4)) * 16;
-    
+  int bonus = GameStagePawns[std::min(pieceCount[Us][PAWN], 8)]
+            + 320 * pieceCount[Us][KNIGHT]
+            + 256 * pieceCount[Us][BISHOP]
+            + 72  * pieceCount[Us][ROOK]
+            + 432 * pieceCount[Us][QUEEN];
+
     // Second-degree polynomial material imbalance, by Tord Romstad
     for (int pt1 = NO_PIECE_TYPE; pt1 <= QUEEN; ++pt1)
     {
