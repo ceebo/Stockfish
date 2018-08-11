@@ -18,6 +18,7 @@
 #include <algorithm> // For std::min
 #include <cassert>
 #include <cstring>   // For std::memset
+#include <iostream>
 
 #include "material.h"
 #include "thread.h"
@@ -234,6 +235,40 @@ Entry* probe(const Position& pos) {
   e->value = int16_t((imbalance<WHITE>(pieceCount) - imbalance<BLACK>(pieceCount)) / 16);
   return e;
 }
+
+  void init() {
+
+      int pieceCount[COLOR_NB][PIECE_TYPE_NB] = {{ 0 }, { 0 }};
+
+      const int PAIR = 0;
+
+      for (int i = 1; i <= 8; i++) {
+          pieceCount[WHITE][PAWN] = i;
+          std::cout << "pawn " << i << " " << imbalance<WHITE>(pieceCount) - imbalance<BLACK>(pieceCount) << std::endl;
+          pieceCount[WHITE][PAWN] = 0;
+      }
+
+      for (int i = 1; i <= 2; i++) {
+          pieceCount[WHITE][KNIGHT] = i;
+          std::cout << "knight " << i << " " << imbalance<WHITE>(pieceCount) - imbalance<BLACK>(pieceCount) << std::endl;
+          pieceCount[WHITE][KNIGHT] = 0;
+
+          pieceCount[WHITE][BISHOP] = i;
+          if (i == 2) pieceCount[WHITE][PAIR] = 1;
+          std::cout << "bishop " << i << " " << imbalance<WHITE>(pieceCount) - imbalance<BLACK>(pieceCount) << std::endl;
+          pieceCount[WHITE][BISHOP] = pieceCount[WHITE][PAIR] = 0;
+
+          pieceCount[WHITE][ROOK] = i;
+          std::cout << "rook " << i << " " << imbalance<WHITE>(pieceCount) - imbalance<BLACK>(pieceCount) << std::endl;
+          pieceCount[WHITE][ROOK] = 0;
+      }
+
+      for (int i = 1; i <= 1; i++) {
+          pieceCount[WHITE][QUEEN] = i;
+          std::cout << "queen " << i << " " << imbalance<WHITE>(pieceCount) - imbalance<BLACK>(pieceCount) << std::endl;
+          pieceCount[WHITE][QUEEN] = 0;
+      }
+  }
 
 } // namespace Material
 

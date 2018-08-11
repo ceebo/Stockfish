@@ -38,6 +38,7 @@ int main(int argc, char* argv[]) {
 
   UCI::init(Options);
   PSQT::init();
+  Material::init();
   Bitboards::init();
   Position::init();
   Bitbases::init();

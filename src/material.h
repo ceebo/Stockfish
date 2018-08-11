@@ -28,6 +28,8 @@
 
 namespace Material {
 
+void init();
+
 /// Material::Entry contains various information about a material configuration.
 /// It contains a material imbalance evaluation, a function pointer to a special
 /// endgame evaluation function (which in most cases is NULL, meaning that the
